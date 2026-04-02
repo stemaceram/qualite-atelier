@@ -42,10 +42,19 @@
     .upload-icon { font-size: 28px; }
     .upload-progress { width: 70%; height: 4px; background: #dde3f0; border-radius: 2px; overflow: hidden; }
     .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.3s; width: 0%; }
-    .comment-input { width: 80%; padding: 7px 12px; border: 1.5px solid #dde3f0; border-radius: 10px; font-size: 13px; text-align: center; outline: none; background: #fff; color: #1a1a2e; }
-    .comment-input::placeholder { color: #bbb; }
-    .photo-comment { padding: 4px 10px 6px; font-size: 11px; color: #666; font-style: italic; line-height: 1.4; }
-    .photo-date { padding: 4px 10px 8px; font-size: 10px; color: #aaa; }
+    .comment-wrap { padding: 6px 8px 8px; }
+    .comment-input {
+      width: 100%; padding: 6px 10px;
+      border: 1.5px solid #e8e8e8; border-radius: 10px;
+      font-size: 12px; outline: none; background: #fafafa;
+      color: #1a1a2e; resize: none; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .comment-input:focus { border-color: #0f3460; background: #fff; }
+    .comment-input::placeholder { color: #ccc; }
+    .comment-input.saving { border-color: #f59e0b; }
+    .comment-input.saved  { border-color: #22c55e; }
+    .photo-date { padding: 2px 10px 8px; font-size: 10px; color: #aaa; }
     .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
     #qr-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
     #qr-overlay.active { display: block; }
@@ -117,7 +126,7 @@
 </div>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
@@ -170,7 +179,7 @@ async function loadPhotos(commandeId) {
       orderBy('createdAt', 'desc')
     );
     const snap = await getDocs(q);
-    renderPhotos(snap.docs.map(d => d.data()));
+    renderPhotos(snap.docs.map(d => ({ ...d.data(), _id: d.id })));
   } catch(e) {
     console.error('Erreur loadPhotos:', e);
     toast('Erreur chargement photos: ' + e.message, 'err');
@@ -183,9 +192,45 @@ function renderPhotos(photos) {
   grid.innerHTML = photos.map(p => `
     <div class="photo-card">
       <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
-      ${p.comment ? `<div class="photo-comment">💬 ${p.comment}</div>` : ''}
+      <div class="comment-wrap">
+        <textarea class="comment-input" rows="2"
+          placeholder="💬 Ajouter un commentaire..."
+          data-docid="${p._id}"
+        >${p.comment || ''}</textarea>
+      </div>
       <div class="photo-date">${formatDate(p.createdAt)}</div>
     </div>`).join('');
+
+  grid.querySelectorAll('.comment-input').forEach(attachCommentEvents);
+}
+
+// Sauvegarde automatique sur blur ou Entrée — zéro clic si pas de commentaire
+function attachCommentEvents(input) {
+  let lastSaved = input.value.trim();
+
+  const save = async () => {
+    const val = input.value.trim();
+    if (val === lastSaved) return; // rien de changé, on ne fait rien
+    lastSaved = val;
+    const docId = input.dataset.docid;
+    if (!docId) return;
+    input.classList.add('saving');
+    try {
+      await updateDoc(doc(db, 'photos', docId), { comment: val });
+      input.classList.remove('saving');
+      input.classList.add('saved');
+      setTimeout(() => input.classList.remove('saved'), 1500);
+    } catch(e) {
+      input.classList.remove('saving');
+      toast('Erreur sauvegarde commentaire', 'err');
+    }
+  };
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
+  });
+  input.addEventListener('click', (e) => e.stopPropagation());
 }
 
 window.addPhoto = async (event) => {
@@ -199,13 +244,17 @@ window.addPhoto = async (event) => {
   if (noItems) noItems.remove();
   const card = document.createElement('div');
   card.className = 'photo-card'; card.id = cardId;
+  // Le champ commentaire est déjà présent dès le début de l'upload
   card.innerHTML = `
     <div class="photo-uploading">
       <div class="upload-icon">📤</div>
       <div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div>
-      <input class="comment-input" id="comment-${cardId}" type="text"
-             placeholder="💬 Commentaire..." maxlength="200"
-             onclick="event.stopPropagation()">
+    </div>
+    <div class="comment-wrap">
+      <textarea class="comment-input" rows="2"
+        placeholder="💬 Ajouter un commentaire..."
+        id="comment-${cardId}"
+      ></textarea>
     </div>
     <div class="photo-date">Envoi en cours...</div>`;
   grid.prepend(card);
@@ -229,18 +278,28 @@ window.addPhoto = async (event) => {
     async () => {
       const url = await getDownloadURL(task.snapshot.ref);
       const now = new Date().toISOString();
-      const comment = document.getElementById('comment-' + cardId)?.value.trim() || '';
-      await addDoc(collection(db, 'photos'), {
+      // Récupérer le commentaire déjà tapé pendant l'upload (si présent)
+      const commentDraft = document.getElementById('comment-' + cardId)?.value.trim() || '';
+      const docRef = await addDoc(collection(db, 'photos'), {
         commandeId: currentCommande,
         url,
         createdAt: now,
-        ...(comment && { comment })
+        ...(commentDraft && { comment: commentDraft })
       });
+      // Remplacer l'aperçu d'upload par la photo, le champ commentaire reste
       const c = document.getElementById(cardId);
-      if (c) c.innerHTML = `
-        <a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a>
-        ${comment ? `<div class="photo-comment">💬 ${comment}</div>` : ''}
-        <div class="photo-date">${formatDate(now)}</div>`;
+      if (c) {
+        c.innerHTML = `
+          <a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a>
+          <div class="comment-wrap">
+            <textarea class="comment-input" rows="2"
+              placeholder="💬 Ajouter un commentaire..."
+              data-docid="${docRef.id}"
+            >${commentDraft}</textarea>
+          </div>
+          <div class="photo-date">${formatDate(now)}</div>`;
+        attachCommentEvents(c.querySelector('.comment-input'));
+      }
       toast('✅ Photo ajoutée !', 'ok');
     }
   );
