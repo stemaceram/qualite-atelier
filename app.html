@@ -51,8 +51,8 @@
     .photo-uploading { width: 100%; aspect-ratio: 1; background: #f0f4ff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
     .upload-icon { font-size: 28px; }
     .upload-progress { width: 70%; height: 4px; background: #dde3f0; border-radius: 2px; overflow: hidden; }
-    .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.3s; width: 5%; animation: pulse-bar 1.5s ease-in-out infinite; }
-    @keyframes pulse-bar { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+    .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; animation: pulse-bar 1.5s ease-in-out infinite; width: 30%; }
+    @keyframes pulse-bar { 0%,100%{opacity:1;width:20%} 50%{opacity:0.6;width:80%} }
     .photo-date { padding: 8px 10px; font-size: 10px; color: #aaa; }
     .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
 
@@ -63,10 +63,10 @@
     .qr-ui { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
     .qr-frame { width: 240px; height: 240px; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.55); position: relative; border: 2px solid rgba(255,255,255,0.5); }
     .qr-corner { position: absolute; width: 30px; height: 30px; border-color: #fff; border-style: solid; }
-    .qr-corner.tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:6px 0 0 0; }
-    .qr-corner.tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 6px 0 0; }
-    .qr-corner.bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 6px; }
-    .qr-corner.br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 6px 0; }
+    .qr-corner.tl { top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:6px 0 0 0; }
+    .qr-corner.tr { top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 6px 0 0; }
+    .qr-corner.bl { bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 6px; }
+    .qr-corner.br { bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 6px 0; }
     .qr-hint { color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 20px; }
     .qr-close { position: absolute; top: max(env(safe-area-inset-top), 20px); right: 16px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 15px; padding: 10px 18px; border-radius: 12px; cursor: pointer; }
 
@@ -145,7 +145,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-// ── CONFIG — remplace par ton nouveau projet v2 si besoin ────
 const firebaseConfig = {
   apiKey: "AIzaSyAiuVaEg2uwMpejuIV7IcUR-VNbrNciHws",
   authDomain: "qualite-atelier.firebaseapp.com",
@@ -155,26 +154,25 @@ const firebaseConfig = {
   appId: "1:831011661135:web:2b1e10bbafab1ea80c513a"
 };
 
-// ── URL de ton Apps Script (upload photos → Google Drive) ────
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtyl5LRjag_1k9rXSFHZ8o2V-QlgcpmfwkHFmxb06ha8nfFDRNS0XCboZcqz4Hnr_C/exec';
+
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
 let currentCommande = null;
 let qrStream = null, qrTimer = null;
 
-// ── NAVIGATION ───────────────────────────────────────────────
 function showScreen(s) {
   document.getElementById('screen-scanner').style.display = s === 'scanner' ? 'flex' : 'none';
   document.getElementById('screen-commande').style.display = s === 'commande' ? 'block' : 'none';
 }
+
 window.goBack = () => {
   showScreen('scanner');
   document.getElementById('commande-input').value = '';
   currentCommande = null;
 };
 
-// ── OUVRIR COMMANDE (Firebase — instantané) ──────────────────
 window.go = async (id) => {
   const commandeId = (id || document.getElementById('commande-input').value.trim()).toUpperCase();
   if (!commandeId) { toast('Saisissez un numéro de commande', 'err'); return; }
@@ -199,13 +197,11 @@ window.go = async (id) => {
   loadPhotos(commandeId);
 };
 
-// ── CHARGER PHOTOS (arrière-plan) ────────────────────────────
 async function loadPhotos(commandeId) {
   try {
     const q = query(collection(db, 'photos'), where('commandeId', '==', commandeId), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
-    const photos = snap.docs.map(d => d.data());
-    renderPhotos(photos);
+    renderPhotos(snap.docs.map(d => d.data()));
   } catch(e) {}
 }
 
@@ -221,18 +217,15 @@ function renderPhotos(photos) {
     </div>`).join('');
 }
 
-// ── AJOUTER PHOTO ────────────────────────────────────────────
 window.addPhoto = async (event) => {
   const file = event.target.files[0];
   if (!file || !currentCommande) return;
   event.target.value = '';
 
-  // Compresse la photo avant envoi (max 1200px)
   const compressed = await compressImage(file, 1200, 0.82);
 
-  // Affiche card "upload en cours" instantanément
   const cardId = 'card-' + Date.now();
-  const grid   = document.getElementById('photos-grid');
+  const grid = document.getElementById('photos-grid');
   const noItems = grid.querySelector('.no-photos');
   if (noItems) noItems.remove();
   const card = document.createElement('div');
@@ -245,22 +238,30 @@ window.addPhoto = async (event) => {
     <div class="photo-date">Envoi en cours...</div>`;
   grid.prepend(card);
 
-  // Upload vers Google Drive via Apps Script
   try {
     const base64 = compressed.split(',')[1];
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
+
+    // Utilise XMLHttpRequest au lieu de fetch (meilleure compatibilité Safari iOS)
+    const result = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', APPS_SCRIPT_URL, true);
+      xhr.setRequestHeader('Content-Type', 'text/plain'); // évite le preflight CORS
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch(e) { reject(new Error('Réponse invalide')); }
+      };
+      xhr.onerror = () => reject(new Error('Erreur réseau'));
+      xhr.ontimeout = () => reject(new Error('Délai dépassé'));
+      xhr.timeout = 60000;
+      xhr.send(JSON.stringify({
         commandeId: currentCommande,
         base64: base64,
         mimeType: 'image/jpeg'
-      })
+      }));
     });
-    const result = await response.json();
 
     if (result.success) {
       const now = new Date().toISOString();
-      // Sauvegarde URL dans Firestore
       await addDoc(collection(db, 'photos'), {
         commandeId: currentCommande,
         url: result.url,
@@ -268,7 +269,6 @@ window.addPhoto = async (event) => {
         fileId: result.fileId,
         createdAt: now
       });
-      // Met à jour la card
       const c = document.getElementById(cardId);
       if (c) c.innerHTML = `
         <a href="${result.viewUrl}" target="_blank">
@@ -277,15 +277,15 @@ window.addPhoto = async (event) => {
         <div class="photo-date">${formatDate(now)}</div>`;
       toast('✅ Photo ajoutée !', 'ok');
     } else {
-      throw new Error(result.error);
+      throw new Error(result.error || 'Erreur inconnue');
     }
   } catch(err) {
     document.getElementById(cardId)?.remove();
-    toast('Erreur upload : ' + err.message, 'err');
+    if (!grid.children.length) grid.innerHTML = '<div class="no-photos">Aucune photo</div>';
+    toast('Erreur : ' + err.message, 'err');
   }
 };
 
-// ── COMPRESSION IMAGE ─────────────────────────────────────────
 function compressImage(file, maxSize, quality) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -308,7 +308,6 @@ function compressImage(file, maxSize, quality) {
   });
 }
 
-// ── QR SCANNER (jsQR — compatible Safari iOS) ────────────────
 window.openQR = async () => {
   try {
     qrStream = await navigator.mediaDevices.getUserMedia({
@@ -323,7 +322,7 @@ window.openQR = async () => {
 };
 
 function scanFrame() {
-  const video  = document.getElementById('qr-video');
+  const video = document.getElementById('qr-video');
   const canvas = document.getElementById('qr-canvas');
   if (!qrStream) return;
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -342,7 +341,6 @@ window.closeQR = () => {
   document.getElementById('qr-overlay').classList.remove('active');
 };
 
-// ── HELPERS ───────────────────────────────────────────────────
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
