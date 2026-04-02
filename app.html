@@ -42,7 +42,10 @@
     .upload-icon { font-size: 28px; }
     .upload-progress { width: 70%; height: 4px; background: #dde3f0; border-radius: 2px; overflow: hidden; }
     .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.3s; width: 0%; }
-    .photo-date { padding: 8px 10px; font-size: 10px; color: #aaa; }
+    .comment-input { width: 80%; padding: 7px 12px; border: 1.5px solid #dde3f0; border-radius: 10px; font-size: 13px; text-align: center; outline: none; background: #fff; color: #1a1a2e; }
+    .comment-input::placeholder { color: #bbb; }
+    .photo-comment { padding: 4px 10px 6px; font-size: 11px; color: #666; font-style: italic; line-height: 1.4; }
+    .photo-date { padding: 4px 10px 8px; font-size: 10px; color: #aaa; }
     .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
     #qr-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
     #qr-overlay.active { display: block; }
@@ -158,6 +161,7 @@ window.go = async (id) => {
   document.getElementById('photos-grid').innerHTML = '<div class="no-photos">Aucune photo</div>';
   hideLoader(); showScreen('commande'); loadPhotos(commandeId);
 };
+
 async function loadPhotos(commandeId) {
   try {
     const q = query(
@@ -168,16 +172,20 @@ async function loadPhotos(commandeId) {
     const snap = await getDocs(q);
     renderPhotos(snap.docs.map(d => d.data()));
   } catch(e) {
-    console.error('Erreur loadPhotos:', e); // ← Pour voir l'erreur dans la console
-    toast('Erreur chargement photos: ' + e.message, 'err'); // ← Visible à l'écran
+    console.error('Erreur loadPhotos:', e);
+    toast('Erreur chargement photos: ' + e.message, 'err');
   }
 }
-
 
 function renderPhotos(photos) {
   const grid = document.getElementById('photos-grid');
   if (!photos.length) { grid.innerHTML = '<div class="no-photos">Aucune photo</div>'; return; }
-  grid.innerHTML = photos.map(p => `<div class="photo-card"><a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a><div class="photo-date">${formatDate(p.createdAt)}</div></div>`).join('');
+  grid.innerHTML = photos.map(p => `
+    <div class="photo-card">
+      <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+      ${p.comment ? `<div class="photo-comment">💬 ${p.comment}</div>` : ''}
+      <div class="photo-date">${formatDate(p.createdAt)}</div>
+    </div>`).join('');
 }
 
 window.addPhoto = async (event) => {
@@ -191,7 +199,15 @@ window.addPhoto = async (event) => {
   if (noItems) noItems.remove();
   const card = document.createElement('div');
   card.className = 'photo-card'; card.id = cardId;
-  card.innerHTML = `<div class="photo-uploading"><div class="upload-icon">📤</div><div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div></div><div class="photo-date">Envoi en cours...</div>`;
+  card.innerHTML = `
+    <div class="photo-uploading">
+      <div class="upload-icon">📤</div>
+      <div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div>
+      <input class="comment-input" id="comment-${cardId}" type="text"
+             placeholder="💬 Commentaire..." maxlength="200"
+             onclick="event.stopPropagation()">
+    </div>
+    <div class="photo-date">Envoi en cours...</div>`;
   grid.prepend(card);
 
   const byteString = atob(compressed.split(",")[1]);
@@ -213,9 +229,18 @@ window.addPhoto = async (event) => {
     async () => {
       const url = await getDownloadURL(task.snapshot.ref);
       const now = new Date().toISOString();
-      await addDoc(collection(db, 'photos'), { commandeId: currentCommande, url, createdAt: now });
+      const comment = document.getElementById('comment-' + cardId)?.value.trim() || '';
+      await addDoc(collection(db, 'photos'), {
+        commandeId: currentCommande,
+        url,
+        createdAt: now,
+        ...(comment && { comment })
+      });
       const c = document.getElementById(cardId);
-      if (c) c.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a><div class="photo-date">${formatDate(now)}</div>`;
+      if (c) c.innerHTML = `
+        <a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a>
+        ${comment ? `<div class="photo-comment">💬 ${comment}</div>` : ''}
+        <div class="photo-date">${formatDate(now)}</div>`;
       toast('✅ Photo ajoutée !', 'ok');
     }
   );
