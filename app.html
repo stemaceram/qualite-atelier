@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Qualité Atelier">
+  <title>Qualité Atelier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; overscroll-behavior: none; }
+
+    /* ---- SCANNER ---- */
+    #screen-scanner {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; padding: 32px 20px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .app-logo { font-size: 48px; margin-bottom: 12px; }
+    .app-title { color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .app-subtitle { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 40px; }
+
+    .scan-card { background: #fff; border-radius: 24px; padding: 28px 20px; width: 100%; max-width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,0.35); }
+    .scan-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .input-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    #commande-input {
+      flex: 1; padding: 14px 16px; font-size: 20px; font-weight: 700;
+      border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e;
+      transition: border-color 0.15s;
+    }
+    #commande-input:focus { border-color: #0f3460; }
+    .btn-qr {
+      width: 54px; height: 54px; background: #f5f5f5; border: 2px solid #e8e8e8;
+      border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.15s;
+    }
+    .btn-qr:active { background: #ebebeb; }
+    .btn-go {
+      width: 100%; padding: 16px; background: #0f3460; color: #fff;
+      border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.2px;
+    }
+    .btn-go:active { opacity: 0.85; }
+
+    /* ---- COMMANDE ---- */
+    #screen-commande { display: none; min-height: 100vh; background: #f0f2f5; }
+
+    .cmd-header {
+      background: linear-gradient(135deg, #1a1a2e, #0f3460);
+      padding: env(safe-area-inset-top, 20px) 20px 24px;
+      padding-top: max(env(safe-area-inset-top), 20px);
+    }
+    .back-btn {
+      background: none; border: none; color: rgba(255,255,255,0.6);
+      font-size: 14px; cursor: pointer; padding: 0; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .back-btn:active { color: #fff; }
+    .cmd-numero { color: #fff; font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+    .cmd-date { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 3px; }
+    .cmd-badge {
+      display: inline-block; margin-top: 10px; padding: 4px 14px;
+      border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .badge-new { background: #22c55e; color: #fff; }
+    .badge-existing { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+
+    .cmd-body { padding: 20px 16px; }
+
+    .btn-photo {
+      width: 100%; padding: 20px; background: #fff;
+      border: 2.5px dashed #0f3460; border-radius: 18px;
+      color: #0f3460; font-size: 16px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 24px; transition: background 0.15s;
+    }
+    .btn-photo:active { background: #f0f4ff; }
+    #photo-input { display: none; }
+
+    .photos-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+    .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .photo-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .photo-uploading { width: 100%; aspect-ratio: 1; background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+    .upload-progress { width: 60%; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+    .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.2s; width: 0%; }
+    .photo-date { padding: 8px 10px; font-size: 10px; color: #aaa; }
+    .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
+
+    /* ---- QR SCANNER ---- */
+    #qr-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
+    #qr-overlay.active { display: block; }
+    #qr-video { width: 100%; height: 100%; object-fit: cover; }
+    .qr-ui { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .qr-frame {
+      width: 220px; height: 220px; border-radius: 20px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+      position: relative; border: 2px solid rgba(255,255,255,0.6);
+    }
+    .qr-corner {
+      position: absolute; width: 28px; height: 28px; border-color: #fff; border-style: solid;
+    }
+    .qr-corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .qr-corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .qr-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .qr-corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+    .qr-hint { color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 20px; }
+    .qr-close {
+      position: absolute; top: max(env(safe-area-inset-top), 16px); right: 16px;
+      pointer-events: all; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+      border: none; color: #fff; font-size: 15px; padding: 10px 18px;
+      border-radius: 12px; cursor: pointer;
+    }
+
+    /* ---- TOAST ---- */
+    .toast {
+      position: fixed; bottom: max(env(safe-area-inset-bottom), 24px); left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1a1a2e; color: #fff; padding: 12px 22px;
+      border-radius: 24px; font-size: 14px; font-weight: 600;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 200;
+      white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok { background: #22c55e; }
+    .toast.err { background: #ef4444; }
+
+    /* ---- LOADING ---- */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 150;
+      background: rgba(15,52,96,0.7); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .loading-text { color: #fff; font-size: 14px; font-weight: 600; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loader-text">Chargement...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- QR SCANNER -->
+<div id="qr-overlay">
+  <video id="qr-video" autoplay playsinline muted></video>
+  <div class="qr-ui">
+    <div class="qr-frame">
+      <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
+      <div class="qr-corner bl"></div><div class="qr-corner br"></div>
+    </div>
+    <div class="qr-hint">Pointez vers un QR code</div>
+  </div>
+  <button class="qr-close" onclick="closeQR()">✕ Fermer</button>
+</div>
+
+<!-- ÉCRAN SCANNER -->
+<div id="screen-scanner">
+  <div class="app-logo">🏭</div>
+  <div class="app-title">Qualité Atelier</div>
+  <div class="app-subtitle">Scannez ou saisissez un numéro de commande</div>
+  <div class="scan-card">
+    <div class="scan-label">Numéro de commande</div>
+    <div class="input-row">
+      <input type="text" id="commande-input" placeholder="Ex: 50235" autocomplete="off" autocorrect="off"
+             onkeydown="if(event.key==='Enter') go()">
+      <button class="btn-qr" onclick="openQR()" aria-label="Scanner QR">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.2" stroke-linecap="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h3v3M17 17h3v3M14 20h3"/>
+        </svg>
+      </button>
+    </div>
+    <button class="btn-go" onclick="go()">Ouvrir la commande →</button>
+  </div>
+</div>
+
+<!-- ÉCRAN COMMANDE -->
+<div id="screen-commande">
+  <div class="cmd-header">
+    <button class="back-btn" onclick="goBack()">← Retour</button>
+    <div class="cmd-numero" id="cmd-num"></div>
+    <div class="cmd-date" id="cmd-date"></div>
+    <span class="cmd-badge" id="cmd-badge"></span>
+  </div>
+  <div class="cmd-body">
+    <button class="btn-photo" onclick="document.getElementById('photo-input').click()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Ajouter une photo
+    </button>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="addPhoto(event)">
+    <div class="photos-label">Photos</div>
+    <div class="photos-grid" id="photos-grid">
+      <div class="no-photos">Aucune photo</div>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+
+// ── CONFIG FIREBASE ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAiuVaEg2uwMpejuIV7IcUR-VNbrNciHws",
+  authDomain: "qualite-atelier.firebaseapp.com",
+  projectId: "qualite-atelier",
+  storageBucket: "qualite-atelier.firebasestorage.app",
+  messagingSenderId: "831011661135",
+  appId: "1:831011661135:web:2b1e10bbafab1ea80c513a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const storage = getStorage(app);
+
+// ── ÉTAT ─────────────────────────────────────────────────────
+let currentCommande = null;
+let qrStream = null, qrTimer = null;
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function showScreen(s) {
+  document.getElementById('screen-scanner').style.display = s === 'scanner' ? 'flex' : 'none';
+  document.getElementById('screen-commande').style.display = s === 'commande' ? 'block' : 'none';
+}
+
+window.goBack = () => {
+  showScreen('scanner');
+  document.getElementById('commande-input').value = '';
+  currentCommande = null;
+};
+
+// ── OUVRIR COMMANDE ──────────────────────────────────────────
+window.go = async (id) => {
+  const commandeId = (id || document.getElementById('commande-input').value.trim()).toUpperCase();
+  if (!commandeId) { toast('Saisissez un numéro de commande', 'err'); return; }
+
+  loader('Ouverture...');
+
+  const ref_ = doc(db, 'commandes', commandeId);
+  const snap = await getDoc(ref_);
+  let isNew = false;
+
+  if (!snap.exists()) {
+    // Nouvelle commande — créée instantanément dans Firestore
+    await setDoc(ref_, { commandeId, createdAt: new Date().toISOString() });
+    isNew = true;
+  }
+
+  const data = snap.exists() ? snap.data() : { commandeId, createdAt: new Date().toISOString() };
+  currentCommande = commandeId;
+
+  // Affiche l'écran commande immédiatement
+  document.getElementById('cmd-num').textContent  = 'N° ' + commandeId;
+  document.getElementById('cmd-date').textContent = 'Créée le ' + formatDate(data.createdAt);
+  const badge = document.getElementById('cmd-badge');
+  badge.textContent  = isNew ? '✨ Nouvelle commande' : '📋 Commande existante';
+  badge.className    = 'cmd-badge ' + (isNew ? 'badge-new' : 'badge-existing');
+  document.getElementById('photos-grid').innerHTML = '<div class="no-photos">Aucune photo</div>';
+
+  hideLoader();
+  showScreen('commande');
+
+  // Charge les photos EN ARRIÈRE-PLAN (pas de blocage)
+  loadPhotos(commandeId);
+};
+
+// ── CHARGER PHOTOS ───────────────────────────────────────────
+async function loadPhotos(commandeId) {
+  const q = query(
+    collection(db, 'photos'),
+    where('commandeId', '==', commandeId),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  const photos = snap.docs.map(d => d.data());
+  renderPhotos(photos);
+}
+
+function renderPhotos(photos) {
+  const grid = document.getElementById('photos-grid');
+  if (!photos.length) { grid.innerHTML = '<div class="no-photos">Aucune photo</div>'; return; }
+  grid.innerHTML = photos.map(p => `
+    <div class="photo-card">
+      <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+      <div class="photo-date">${formatDate(p.createdAt)}</div>
+    </div>`).join('');
+}
+
+// ── AJOUTER PHOTO ────────────────────────────────────────────
+window.addPhoto = async (event) => {
+  const file = event.target.files[0];
+  if (!file || !currentCommande) return;
+  event.target.value = '';
+
+  // Crée une card avec progress bar INSTANTANÉMENT
+  const cardId  = 'card-' + Date.now();
+  const grid    = document.getElementById('photos-grid');
+  const noItems = grid.querySelector('.no-photos');
+  if (noItems) noItems.remove();
+
+  const card = document.createElement('div');
+  card.className = 'photo-card';
+  card.id = cardId;
+  card.innerHTML = `
+    <div class="photo-uploading">
+      <div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div>
+    </div>
+    <div class="photo-date">Upload en cours...</div>`;
+  grid.prepend(card);
+
+  // Upload en arrière-plan
+  const path    = `photos/${currentCommande}/${Date.now()}_${file.name}`;
+  const storRef = ref(storage, path);
+  const task    = uploadBytesResumable(storRef, file);
+
+  task.on('state_changed',
+    (snap) => {
+      const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+      const bar = document.getElementById('bar-' + cardId);
+      if (bar) bar.style.width = pct + '%';
+    },
+    (err) => {
+      toast('Erreur upload : ' + err.message, 'err');
+      document.getElementById(cardId)?.remove();
+    },
+    async () => {
+      const url = await getDownloadURL(task.snapshot.ref);
+      const now = new Date().toISOString();
+
+      // Sauvegarde dans Firestore
+      await setDoc(doc(collection(db, 'photos')), {
+        commandeId: currentCommande, url, createdAt: now,
+        path
+      });
+
+      // Remplace la card progress par la vraie photo
+      const c = document.getElementById(cardId);
+      if (c) c.innerHTML = `
+        <a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a>
+        <div class="photo-date">${formatDate(now)}</div>`;
+
+      toast('✅ Photo ajoutée !', 'ok');
+    }
+  );
+};
+
+// ── QR SCANNER ───────────────────────────────────────────────
+window.openQR = async () => {
+  if (!('BarcodeDetector' in window)) {
+    toast('Scanner non supporté sur ce navigateur', 'err'); return;
+  }
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    document.getElementById('qr-video').srcObject = qrStream;
+    document.getElementById('qr-overlay').classList.add('active');
+    const det = new BarcodeDetector({ formats: ['qr_code'] });
+    qrTimer = setInterval(async () => {
+      try {
+        const codes = await det.detect(document.getElementById('qr-video'));
+        if (codes.length) { closeQR(); go(codes[0].rawValue); }
+      } catch(e) {}
+    }, 250);
+  } catch(e) { toast('Accès caméra refusé', 'err'); }
+};
+
+window.closeQR = () => {
+  clearInterval(qrTimer); qrTimer = null;
+  qrStream?.getTracks().forEach(t => t.stop()); qrStream = null;
+  document.getElementById('qr-overlay').classList.remove('active');
+};
+
+// ── HELPERS ──────────────────────────────────────────────────
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function loader(txt) {
+  document.getElementById('loader-text').textContent = txt;
+  document.getElementById('loader').classList.add('active');
+}
+function hideLoader() { document.getElementById('loader').classList.remove('active'); }
+
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Focus auto
+document.getElementById('commande-input').focus();
+</script>
+</body>
+</html>
