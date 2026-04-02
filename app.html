@@ -244,9 +244,8 @@ window.addPhoto = async (event) => {
   if (noItems) noItems.remove();
   const card = document.createElement('div');
   card.className = 'photo-card'; card.id = cardId;
-  // Le champ commentaire est déjà présent dès le début de l'upload
   card.innerHTML = `
-    <div class="photo-uploading">
+    <div class="photo-uploading" id="uploading-${cardId}">
       <div class="upload-icon">📤</div>
       <div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div>
     </div>
@@ -256,7 +255,7 @@ window.addPhoto = async (event) => {
         id="comment-${cardId}"
       ></textarea>
     </div>
-    <div class="photo-date">Envoi en cours...</div>`;
+    <div class="photo-date" id="date-${cardId}">Envoi en cours...</div>`;
   grid.prepend(card);
 
   const byteString = atob(compressed.split(",")[1]);
@@ -278,28 +277,30 @@ window.addPhoto = async (event) => {
     async () => {
       const url = await getDownloadURL(task.snapshot.ref);
       const now = new Date().toISOString();
-      // Récupérer le commentaire déjà tapé pendant l'upload (si présent)
       const commentDraft = document.getElementById('comment-' + cardId)?.value.trim() || '';
       const docRef = await addDoc(collection(db, 'photos'), {
-        commandeId: currentCommande,
-        url,
-        createdAt: now,
+        commandeId: currentCommande, url, createdAt: now,
         ...(commentDraft && { comment: commentDraft })
       });
-      // Remplacer l'aperçu d'upload par la photo, le champ commentaire reste
-      const c = document.getElementById(cardId);
-      if (c) {
-        c.innerHTML = `
-          <a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a>
-          <div class="comment-wrap">
-            <textarea class="comment-input" rows="2"
-              placeholder="💬 Ajouter un commentaire..."
-              data-docid="${docRef.id}"
-            >${commentDraft}</textarea>
-          </div>
-          <div class="photo-date">${formatDate(now)}</div>`;
-        attachCommentEvents(c.querySelector('.comment-input'));
+
+      // ✅ On remplace SEULEMENT la zone d'upload par l'image — le textarea reste intact
+      const uploadingEl = document.getElementById('uploading-' + cardId);
+      if (uploadingEl) {
+        const img = document.createElement('a');
+        img.href = url; img.target = '_blank';
+        img.innerHTML = `<img src="${url}" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">`;
+        uploadingEl.replaceWith(img);
       }
+
+      // Mettre à jour la date et attacher le data-docid au textarea
+      const dateEl = document.getElementById('date-' + cardId);
+      if (dateEl) dateEl.textContent = formatDate(now);
+      const textarea = document.getElementById('comment-' + cardId);
+      if (textarea) {
+        textarea.dataset.docid = docRef.id;
+        attachCommentEvents(textarea);
+      }
+
       toast('✅ Photo ajoutée !', 'ok');
     }
   );
