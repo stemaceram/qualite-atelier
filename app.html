@@ -158,14 +158,21 @@ window.go = async (id) => {
   document.getElementById('photos-grid').innerHTML = '<div class="no-photos">Aucune photo</div>';
   hideLoader(); showScreen('commande'); loadPhotos(commandeId);
 };
-
 async function loadPhotos(commandeId) {
   try {
-    const q = query(collection(db, 'photos'), where('commandeId', '==', commandeId), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db, 'photos'),
+      where('commandeId', '==', commandeId),
+      orderBy('createdAt', 'desc')
+    );
     const snap = await getDocs(q);
     renderPhotos(snap.docs.map(d => d.data()));
-  } catch(e) {}
+  } catch(e) {
+    console.error('Erreur loadPhotos:', e); // ← Pour voir l'erreur dans la console
+    toast('Erreur chargement photos: ' + e.message, 'err'); // ← Visible à l'écran
+  }
 }
+
 
 function renderPhotos(photos) {
   const grid = document.getElementById('photos-grid');
