@@ -12,29 +12,20 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; overscroll-behavior: none; }
-
-    #screen-scanner {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 100vh; padding: 32px 20px;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    }
+    #screen-scanner { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 32px 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
     .app-logo { font-size: 48px; margin-bottom: 12px; }
     .app-title { color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
     .app-subtitle { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 40px; text-align: center; }
     .scan-card { background: #fff; border-radius: 24px; padding: 28px 20px; width: 100%; max-width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,0.35); }
     .scan-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
     .input-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    #commande-input { flex: 1; padding: 14px 16px; font-size: 20px; font-weight: 700; border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e; transition: border-color 0.15s; }
+    #commande-input { flex: 1; padding: 14px 16px; font-size: 20px; font-weight: 700; border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e; }
     #commande-input:focus { border-color: #0f3460; }
     .btn-qr { width: 54px; height: 54px; background: #f5f5f5; border: 2px solid #e8e8e8; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .btn-qr:active { background: #ebebeb; }
     .btn-go { width: 100%; padding: 16px; background: #0f3460; color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
-    .btn-go:active { opacity: 0.85; }
-
     #screen-commande { display: none; min-height: 100vh; background: #f0f2f5; }
     .cmd-header { background: linear-gradient(135deg, #1a1a2e, #0f3460); padding: 20px 20px 24px; padding-top: max(env(safe-area-inset-top), 20px); }
     .back-btn { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; padding: 0; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; }
-    .back-btn:active { color: #fff; }
     .cmd-numero { color: #fff; font-size: 30px; font-weight: 800; }
     .cmd-date { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 3px; }
     .cmd-badge { display: inline-block; margin-top: 10px; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
@@ -42,7 +33,6 @@
     .badge-existing { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
     .cmd-body { padding: 20px 16px; }
     .btn-photo { width: 100%; padding: 20px; background: #fff; border: 2.5px dashed #0f3460; border-radius: 18px; color: #0f3460; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px; }
-    .btn-photo:active { background: #f0f4ff; }
     #photo-input { display: none; }
     .photos-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
     .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -51,11 +41,9 @@
     .photo-uploading { width: 100%; aspect-ratio: 1; background: #f0f4ff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
     .upload-icon { font-size: 28px; }
     .upload-progress { width: 70%; height: 4px; background: #dde3f0; border-radius: 2px; overflow: hidden; }
-    .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; animation: pulse-bar 1.5s ease-in-out infinite; width: 30%; }
-    @keyframes pulse-bar { 0%,100%{opacity:1;width:20%} 50%{opacity:0.6;width:80%} }
+    .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.3s; width: 0%; }
     .photo-date { padding: 8px 10px; font-size: 10px; color: #aaa; }
     .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
-
     #qr-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
     #qr-overlay.active { display: block; }
     #qr-video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
@@ -68,14 +56,12 @@
     .qr-corner.bl { bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 6px; }
     .qr-corner.br { bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 6px 0; }
     .qr-hint { color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 20px; }
-    .qr-close { position: absolute; top: max(env(safe-area-inset-top), 20px); right: 16px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 15px; padding: 10px 18px; border-radius: 12px; cursor: pointer; }
-
+    .qr-close { position: absolute; top: max(env(safe-area-inset-top), 20px); right: 16px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 15px; padding: 10px 18px; border-radius: 12px; cursor: pointer; }
     .loading-overlay { display: none; position: fixed; inset: 0; z-index: 150; background: rgba(15,52,96,0.75); backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
     .loading-overlay.active { display: flex; }
     .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
     .loading-text { color: #fff; font-size: 14px; font-weight: 600; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .toast { position: fixed; bottom: max(env(safe-area-inset-bottom), 24px); left: 50%; transform: translateX(-50%) translateY(100px); background: #1a1a2e; color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); z-index: 200; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.ok { background: #22c55e; }
@@ -83,26 +69,17 @@
   </style>
 </head>
 <body>
-
-<div class="loading-overlay" id="loader">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loader-text">Chargement...</div>
-</div>
+<div class="loading-overlay" id="loader"><div class="spinner"></div><div class="loading-text" id="loader-text">Chargement...</div></div>
 <div class="toast" id="toast"></div>
-
 <div id="qr-overlay">
   <video id="qr-video" autoplay playsinline muted></video>
   <canvas id="qr-canvas"></canvas>
   <div class="qr-ui">
-    <div class="qr-frame">
-      <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
-      <div class="qr-corner bl"></div><div class="qr-corner br"></div>
-    </div>
+    <div class="qr-frame"><div class="qr-corner tl"></div><div class="qr-corner tr"></div><div class="qr-corner bl"></div><div class="qr-corner br"></div></div>
     <div class="qr-hint">Pointez vers un QR code</div>
   </div>
   <button class="qr-close" onclick="closeQR()">✕ Fermer</button>
 </div>
-
 <div id="screen-scanner">
   <div class="app-logo">🏭</div>
   <div class="app-title">Qualité Atelier</div>
@@ -111,18 +88,13 @@
     <div class="scan-label">Numéro de commande</div>
     <div class="input-row">
       <input type="text" id="commande-input" placeholder="Ex: 50235" autocomplete="off" autocorrect="off" autocapitalize="characters" onkeydown="if(event.key==='Enter') go()">
-      <button class="btn-qr" onclick="openQR()" aria-label="Scanner QR">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <path d="M14 14h3v3M17 17h3v3M14 20h3"/>
-        </svg>
+      <button class="btn-qr" onclick="openQR()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 17h3v3M14 20h3"/></svg>
       </button>
     </div>
     <button class="btn-go" onclick="go()">Ouvrir la commande →</button>
   </div>
 </div>
-
 <div id="screen-commande">
   <div class="cmd-header">
     <button class="back-btn" onclick="goBack()">← Retour</button>
@@ -140,24 +112,23 @@
     <div class="photos-grid" id="photos-grid"><div class="no-photos">Aucune photo</div></div>
   </div>
 </div>
-
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, orderBy, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAiuVaEg2uwMpejuIV7IcUR-VNbrNciHws",
-  authDomain: "qualite-atelier.firebaseapp.com",
-  projectId: "qualite-atelier",
-  storageBucket: "qualite-atelier.firebasestorage.app",
-  messagingSenderId: "831011661135",
-  appId: "1:831011661135:web:2b1e10bbafab1ea80c513a"
+  apiKey: "AIzaSyBPI4-NYR0-Wn0UxQ3Z8W4WH7emy_58z44",
+  authDomain: "qualite-atelier-v2.firebaseapp.com",
+  projectId: "qualite-atelier-v2",
+  storageBucket: "qualite-atelier-v2.firebasestorage.app",
+  messagingSenderId: "995018724410",
+  appId: "1:995018724410:web:cb1ac7247092e4d9579103"
 };
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtyl5LRjag_1k9rXSFHZ8o2V-QlgcpmfwkHFmxb06ha8nfFDRNS0XCboZcqz4Hnr_C/exec';
-
 const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 let currentCommande = null;
 let qrStream = null, qrTimer = null;
@@ -167,11 +138,7 @@ function showScreen(s) {
   document.getElementById('screen-commande').style.display = s === 'commande' ? 'block' : 'none';
 }
 
-window.goBack = () => {
-  showScreen('scanner');
-  document.getElementById('commande-input').value = '';
-  currentCommande = null;
-};
+window.goBack = () => { showScreen('scanner'); document.getElementById('commande-input').value = ''; currentCommande = null; };
 
 window.go = async (id) => {
   const commandeId = (id || document.getElementById('commande-input').value.trim()).toUpperCase();
@@ -180,21 +147,16 @@ window.go = async (id) => {
   const ref_ = doc(db, 'commandes', commandeId);
   const snap = await getDoc(ref_);
   let isNew = false;
-  if (!snap.exists()) {
-    await setDoc(ref_, { commandeId, createdAt: new Date().toISOString() });
-    isNew = true;
-  }
+  if (!snap.exists()) { await setDoc(ref_, { commandeId, createdAt: new Date().toISOString() }); isNew = true; }
   const data = snap.exists() ? snap.data() : { commandeId, createdAt: new Date().toISOString() };
   currentCommande = commandeId;
-  document.getElementById('cmd-num').textContent  = 'N° ' + commandeId;
+  document.getElementById('cmd-num').textContent = 'N° ' + commandeId;
   document.getElementById('cmd-date').textContent = 'Créée le ' + formatDate(data.createdAt);
   const badge = document.getElementById('cmd-badge');
   badge.textContent = isNew ? '✨ Nouvelle commande' : '📋 Commande existante';
-  badge.className   = 'cmd-badge ' + (isNew ? 'badge-new' : 'badge-existing');
+  badge.className = 'cmd-badge ' + (isNew ? 'badge-new' : 'badge-existing');
   document.getElementById('photos-grid').innerHTML = '<div class="no-photos">Aucune photo</div>';
-  hideLoader();
-  showScreen('commande');
-  loadPhotos(commandeId);
+  hideLoader(); showScreen('commande'); loadPhotos(commandeId);
 };
 
 async function loadPhotos(commandeId) {
@@ -208,82 +170,48 @@ async function loadPhotos(commandeId) {
 function renderPhotos(photos) {
   const grid = document.getElementById('photos-grid');
   if (!photos.length) { grid.innerHTML = '<div class="no-photos">Aucune photo</div>'; return; }
-  grid.innerHTML = photos.map(p => `
-    <div class="photo-card">
-      <a href="${p.viewUrl || p.url}" target="_blank">
-        <img src="${p.url}" loading="lazy" alt="">
-      </a>
-      <div class="photo-date">${formatDate(p.createdAt)}</div>
-    </div>`).join('');
+  grid.innerHTML = photos.map(p => `<div class="photo-card"><a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a><div class="photo-date">${formatDate(p.createdAt)}</div></div>`).join('');
 }
 
 window.addPhoto = async (event) => {
   const file = event.target.files[0];
   if (!file || !currentCommande) return;
   event.target.value = '';
-
   const compressed = await compressImage(file, 1200, 0.82);
-
   const cardId = 'card-' + Date.now();
   const grid = document.getElementById('photos-grid');
   const noItems = grid.querySelector('.no-photos');
   if (noItems) noItems.remove();
   const card = document.createElement('div');
   card.className = 'photo-card'; card.id = cardId;
-  card.innerHTML = `
-    <div class="photo-uploading">
-      <div class="upload-icon">📤</div>
-      <div class="upload-progress"><div class="upload-bar"></div></div>
-    </div>
-    <div class="photo-date">Envoi en cours...</div>`;
+  card.innerHTML = `<div class="photo-uploading"><div class="upload-icon">📤</div><div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div></div><div class="photo-date">Envoi en cours...</div>`;
   grid.prepend(card);
 
-  try {
-    const base64 = compressed.split(',')[1];
+  const byteString = atob(compressed.split(",")[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+  const blob = new Blob([ab], { type: "image/jpeg" });
+  const path = `photos/${currentCommande}/${Date.now()}.jpg`;
+  const storRef = ref(storage, path);
+  const task = uploadBytesResumable(storRef, blob);
 
-    // Utilise XMLHttpRequest au lieu de fetch (meilleure compatibilité Safari iOS)
-    const result = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', APPS_SCRIPT_URL, true);
-      xhr.setRequestHeader('Content-Type', 'text/plain'); // évite le preflight CORS
-      xhr.onload = () => {
-        try { resolve(JSON.parse(xhr.responseText)); }
-        catch(e) { reject(new Error('Réponse invalide')); }
-      };
-      xhr.onerror = () => reject(new Error('Erreur réseau'));
-      xhr.ontimeout = () => reject(new Error('Délai dépassé'));
-      xhr.timeout = 60000;
-      xhr.send(JSON.stringify({
-        commandeId: currentCommande,
-        base64: base64,
-        mimeType: 'image/jpeg'
-      }));
-    });
-
-    if (result.success) {
+  task.on('state_changed',
+    (snap) => {
+      const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+      const bar = document.getElementById('bar-' + cardId);
+      if (bar) bar.style.width = pct + '%';
+    },
+    (err) => { document.getElementById(cardId)?.remove(); toast('Erreur upload', 'err'); },
+    async () => {
+      const url = await getDownloadURL(task.snapshot.ref);
       const now = new Date().toISOString();
-      await addDoc(collection(db, 'photos'), {
-        commandeId: currentCommande,
-        url: result.url,
-        viewUrl: result.viewUrl,
-        fileId: result.fileId,
-        createdAt: now
-      });
+      await addDoc(collection(db, 'photos'), { commandeId: currentCommande, url, createdAt: now });
       const c = document.getElementById(cardId);
-      if (c) c.innerHTML = `
-        <a href="${result.viewUrl}" target="_blank">
-          <img src="${result.url}" loading="lazy" alt="">
-        </a>
-        <div class="photo-date">${formatDate(now)}</div>`;
+      if (c) c.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt=""></a><div class="photo-date">${formatDate(now)}</div>`;
       toast('✅ Photo ajoutée !', 'ok');
-    } else {
-      throw new Error(result.error || 'Erreur inconnue');
     }
-  } catch(err) {
-    document.getElementById(cardId)?.remove();
-    if (!grid.children.length) grid.innerHTML = '<div class="no-photos">Aucune photo</div>';
-    toast('Erreur : ' + err.message, 'err');
-  }
+  );
 };
 
 function compressImage(file, maxSize, quality) {
@@ -310,12 +238,9 @@ function compressImage(file, maxSize, quality) {
 
 window.openQR = async () => {
   try {
-    qrStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
     const video = document.getElementById('qr-video');
-    video.srcObject = qrStream;
-    await video.play();
+    video.srcObject = qrStream; await video.play();
     document.getElementById('qr-overlay').classList.add('active');
     scanFrame();
   } catch(e) { toast('Accès caméra refusé', 'err'); }
@@ -351,10 +276,8 @@ function hideLoader() { document.getElementById('loader').classList.remove('acti
 function toast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast ' + (type || '');
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500);
 }
-
 document.getElementById('commande-input').focus();
 </script>
 </body>
