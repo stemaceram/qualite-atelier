@@ -6,24 +6,62 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Qualité Atelier">
-  <title>Qualité Atelier</title>
+  <meta name="apple-mobile-web-app-title" content="Qualité Stema">
+  <title>Qualité Stema</title>
   <link rel="apple-touch-icon" href="icon.png">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; overscroll-behavior: none; }
-    #screen-scanner { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 32px 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
-    .app-logo { font-size: 48px; margin-bottom: 12px; }
-    .app-title { color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
-    .app-subtitle { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 40px; text-align: center; }
-    .scan-card { background: #fff; border-radius: 24px; padding: 28px 20px; width: 100%; max-width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,0.35); }
+
+    /* ── SCANNER ── */
+    #screen-scanner { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 32px 20px 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+    .stema-logo-wrap { background: #fff; border-radius: 20px; padding: 14px 22px; margin-bottom: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .stema-logo-wrap img { height: 56px; display: block; }
+    .app-title { color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .app-subtitle { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 28px; text-align: center; }
+
+    /* Bouton QR centré au-dessus de la carte */
+    .btn-qr-main { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 16px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 14px; backdrop-filter: blur(6px); }
+    .btn-qr-main:active { background: rgba(255,255,255,0.2); }
+
+    .scan-card { background: #fff; border-radius: 24px; padding: 24px 20px; width: 100%; max-width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,0.35); }
     .scan-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .input-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    #commande-input { flex: 1; padding: 14px 16px; font-size: 20px; font-weight: 700; border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e; }
+    #commande-input { width: 100%; padding: 14px 16px; font-size: 20px; font-weight: 700; border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e; margin-bottom: 12px; }
     #commande-input:focus { border-color: #0f3460; }
-    .btn-qr { width: 54px; height: 54px; background: #f5f5f5; border: 2px solid #e8e8e8; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .btn-go { width: 100%; padding: 16px; background: #0f3460; color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+
+    /* Opérateur sous la carte */
+    .operator-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: rgba(255,255,255,0.6); font-size: 13px; cursor: pointer; }
+    .operator-row span { font-weight: 600; color: rgba(255,255,255,0.85); }
+    .operator-row svg { flex-shrink: 0; }
+
+    /* Bouton galerie */
+    .btn-galerie { width: 100%; max-width: 360px; padding: 12px; background: transparent; color: rgba(255,255,255,0.5); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 14px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+
+    /* Compteur stockage */
+    .storage-bar-wrap { margin-top: 18px; width: 100%; max-width: 360px; }
+    .storage-info { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.3); margin-bottom: 4px; }
+    .storage-track { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    .storage-fill { height: 100%; background: rgba(255,255,255,0.35); border-radius: 2px; transition: width 0.5s; }
+
+    /* ── MODALE NOM ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); align-items: flex-end; justify-content: center; padding-bottom: max(env(safe-area-inset-bottom), 20px); }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: #fff; border-radius: 24px 24px 20px 20px; padding: 28px 24px 20px; width: 100%; max-width: 400px; margin: 0 16px; text-align: center; }
+    .modal-icon { font-size: 36px; margin-bottom: 10px; }
+    .modal-title { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .modal-desc { font-size: 13px; color: #888; margin-bottom: 18px; }
+    .modal-input { width: 100%; padding: 13px 16px; font-size: 16px; font-weight: 600; border: 2px solid #e8e8e8; border-radius: 14px; outline: none; color: #1a1a2e; margin-bottom: 14px; text-align: center; }
+    .modal-input:focus { border-color: #0f3460; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-cancel { flex: 1; padding: 14px; background: #f0f2f5; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; color: #555; cursor: pointer; }
+    .btn-confirm { flex: 1; padding: 14px; background: #0f3460; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; }
+    .btn-confirm-delete { flex: 1; padding: 14px; background: #ef4444; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; }
+
+    /* ── COMMANDE ── */
     #screen-commande { display: none; min-height: 100vh; background: #f0f2f5; }
     .cmd-header { background: linear-gradient(135deg, #1a1a2e, #0f3460); padding: 20px 20px 24px; padding-top: max(env(safe-area-inset-top), 20px); }
     .back-btn { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; padding: 0; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; }
@@ -37,26 +75,47 @@
     #photo-input { display: none; }
     .photos-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
     .photos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .photo-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+
+    /* ── PHOTO CARD ── */
+    .photo-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.07); position: relative; }
     .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
     .photo-uploading { width: 100%; aspect-ratio: 1; background: #f0f4ff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
     .upload-icon { font-size: 28px; }
     .upload-progress { width: 70%; height: 4px; background: #dde3f0; border-radius: 2px; overflow: hidden; }
     .upload-bar { height: 100%; background: #0f3460; border-radius: 2px; transition: width 0.3s; width: 0%; }
-    .comment-wrap { padding: 6px 8px 8px; }
-    .comment-input {
-      width: 100%; padding: 6px 10px;
-      border: 1.5px solid #e8e8e8; border-radius: 10px;
-      font-size: 12px; outline: none; background: #fafafa;
-      color: #1a1a2e; resize: none; font-family: inherit;
-      transition: border-color 0.2s;
-    }
+    .btn-delete { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; background: rgba(0,0,0,0.45); border: none; border-radius: 50%; color: #fff; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .btn-delete:active { background: rgba(239,68,68,0.85); }
+    .photo-operator { padding: 5px 10px 0; font-size: 10px; color: #0f3460; font-weight: 700; }
+    .comment-wrap { padding: 4px 8px 6px; }
+    .comment-input { width: 100%; padding: 6px 10px; border: 1.5px solid #e8e8e8; border-radius: 10px; font-size: 12px; outline: none; background: #fafafa; color: #1a1a2e; resize: none; font-family: inherit; transition: border-color 0.2s; }
     .comment-input:focus { border-color: #0f3460; background: #fff; }
     .comment-input::placeholder { color: #ccc; }
     .comment-input.saving { border-color: #f59e0b; }
     .comment-input.saved  { border-color: #22c55e; }
     .photo-date { padding: 2px 10px 8px; font-size: 10px; color: #aaa; }
     .no-photos { grid-column: 1/-1; text-align: center; color: #bbb; font-size: 14px; padding: 32px 0; }
+
+    /* ── GALERIE ── */
+    #screen-galerie { display: none; min-height: 100vh; background: #f0f2f5; }
+    .gal-header { background: linear-gradient(135deg, #1a1a2e, #0f3460); padding: 20px 20px 24px; padding-top: max(env(safe-area-inset-top), 20px); }
+    .gal-title { color: #fff; font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .gal-subtitle { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 4px; }
+    .gal-filters { background: #fff; border-radius: 18px; padding: 16px; margin: 16px 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .filter-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .filter-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    .filter-date { flex: 1; padding: 9px 12px; font-size: 14px; border: 1.5px solid #e8e8e8; border-radius: 10px; outline: none; color: #1a1a2e; }
+    .filter-date:focus { border-color: #0f3460; }
+    .filter-actions { display: flex; gap: 8px; }
+    .btn-filter { flex: 1; padding: 11px; background: #0f3460; color: #fff; border: none; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-export { flex: 1; padding: 11px; background: #22c55e; color: #fff; border: none; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-export:disabled { background: #aaa; cursor: not-allowed; }
+    .gal-body { padding: 16px; }
+    .gal-commande-block { margin-bottom: 24px; }
+    .gal-commande-label { font-size: 12px; font-weight: 700; color: #0f3460; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; padding: 6px 12px; background: #e8eef7; border-radius: 10px; display: inline-block; cursor: pointer; }
+    .gal-commande-label:active { background: #d0daf0; }
+    .gal-empty { text-align: center; color: #bbb; font-size: 14px; padding: 40px 0; }
+
+    /* ── QR ── */
     #qr-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
     #qr-overlay.active { display: block; }
     #qr-video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
@@ -70,6 +129,8 @@
     .qr-corner.br { bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 6px 0; }
     .qr-hint { color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 20px; }
     .qr-close { position: absolute; top: max(env(safe-area-inset-top), 20px); right: 16px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 15px; padding: 10px 18px; border-radius: 12px; cursor: pointer; }
+
+    /* ── LOADER / TOAST ── */
     .loading-overlay { display: none; position: fixed; inset: 0; z-index: 150; background: rgba(15,52,96,0.75); backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
     .loading-overlay.active { display: flex; }
     .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -82,8 +143,38 @@
   </style>
 </head>
 <body>
+
 <div class="loading-overlay" id="loader"><div class="spinner"></div><div class="loading-text" id="loader-text">Chargement...</div></div>
 <div class="toast" id="toast"></div>
+
+<!-- ── MODALE NOM OPÉRATEUR ── -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal-box">
+    <div class="modal-icon">👷</div>
+    <div class="modal-title">Bienvenue !</div>
+    <div class="modal-desc">Entrez votre prénom pour signer vos photos. Vous pourrez le modifier à tout moment.</div>
+    <input class="modal-input" id="name-input" type="text" placeholder="Votre prénom" maxlength="40" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="skipName()">Ignorer</button>
+      <button class="btn-confirm" onclick="saveName()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODALE SUPPRESSION ── -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Supprimer la photo ?</div>
+    <div class="modal-desc">Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn-confirm-delete" id="btn-confirm-delete">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── QR ── -->
 <div id="qr-overlay">
   <video id="qr-video" autoplay playsinline muted></video>
   <canvas id="qr-canvas"></canvas>
@@ -93,21 +184,47 @@
   </div>
   <button class="qr-close" onclick="closeQR()">✕ Fermer</button>
 </div>
+
+<!-- ── SCANNER ── -->
 <div id="screen-scanner">
-  <div class="app-logo">🏭</div>
-  <div class="app-title">Qualité Atelier</div>
-  <div class="app-subtitle">Scannez ou saisissez un numéro de commande</div>
+  <div class="stema-logo-wrap">
+    <img src="Stema-logo.jpg" alt="Stema">
+  </div>
+  <div class="app-title">Qualité Stema</div>
+  <div class="app-subtitle">Contrôle qualité atelier</div>
+
+  <!-- QR centré au-dessus de la carte -->
+  <button class="btn-qr-main" onclick="openQR()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 17h3v3M14 20h3"/></svg>
+    Scanner un QR code
+  </button>
+
   <div class="scan-card">
     <div class="scan-label">Numéro de commande</div>
-    <div class="input-row">
-      <input type="text" id="commande-input" placeholder="Ex: 50235" autocomplete="off" autocorrect="off" autocapitalize="characters" onkeydown="if(event.key==='Enter') go()">
-      <button class="btn-qr" onclick="openQR()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 17h3v3M14 20h3"/></svg>
-      </button>
-    </div>
+    <input type="text" id="commande-input" placeholder="Ex: 50235" autocomplete="off" autocorrect="off" autocapitalize="characters" onkeydown="if(event.key==='Enter') go()">
     <button class="btn-go" onclick="go()">Ouvrir la commande →</button>
   </div>
+
+  <!-- Opérateur connecté -->
+  <div class="operator-row" onclick="openNameModal(true)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span id="operator-display">Anonyme</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </div>
+
+  <button class="btn-galerie" onclick="openGalerie()">🖼️ Voir toutes les photos</button>
+
+  <!-- Compteur stockage -->
+  <div class="storage-bar-wrap" id="storage-wrap" style="display:none">
+    <div class="storage-info">
+      <span id="storage-used">...</span>
+      <span>/ 5 Go</span>
+    </div>
+    <div class="storage-track"><div class="storage-fill" id="storage-fill" style="width:0%"></div></div>
+  </div>
 </div>
+
+<!-- ── COMMANDE ── -->
 <div id="screen-commande">
   <div class="cmd-header">
     <button class="back-btn" onclick="goBack()">← Retour</button>
@@ -125,10 +242,41 @@
     <div class="photos-grid" id="photos-grid"><div class="no-photos">Aucune photo</div></div>
   </div>
 </div>
+
+<!-- ── GALERIE ── -->
+<div id="screen-galerie">
+  <div class="gal-header">
+    <button class="back-btn" onclick="goBack()">← Retour</button>
+    <div class="gal-title">🖼️ Toutes les photos</div>
+    <div class="gal-subtitle" id="gal-subtitle">Chargement...</div>
+  </div>
+
+  <!-- Filtres date + export -->
+  <div class="gal-filters">
+    <div class="filter-row">
+      <span class="filter-label">Du</span>
+      <input type="date" class="filter-date" id="filter-from">
+      <span class="filter-label">Au</span>
+      <input type="date" class="filter-date" id="filter-to">
+    </div>
+    <div class="filter-actions">
+      <button class="btn-filter" onclick="applyFilter()">🔍 Filtrer</button>
+      <button class="btn-export" id="btn-export" onclick="exportZip()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exporter ZIP
+      </button>
+    </div>
+  </div>
+
+  <div class="gal-body">
+    <div id="gal-content"></div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, orderBy, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, getDocs, addDoc, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPI4-NYR0-Wn0UxQ3Z8W4WH7emy_58z44",
@@ -145,14 +293,89 @@ const storage = getStorage(app);
 
 let currentCommande = null;
 let qrStream = null, qrTimer = null;
+let pendingDelete = null;
+let currentOperator = '';
+let galleriePhotos = []; // photos affichées dans la galerie (pour export)
 
-function showScreen(s) {
-  document.getElementById('screen-scanner').style.display = s === 'scanner' ? 'flex' : 'none';
-  document.getElementById('screen-commande').style.display = s === 'commande' ? 'block' : 'none';
+// ── NOM OPÉRATEUR ──
+function initOperator() {
+  const saved = localStorage.getItem('stema_operator');
+  if (saved) {
+    currentOperator = saved;
+    document.getElementById('operator-display').textContent = saved;
+  } else {
+    // Première ouverture : proposer de saisir le nom
+    setTimeout(() => openNameModal(false), 500);
+  }
+  loadStorageStats();
 }
 
-window.goBack = () => { showScreen('scanner'); document.getElementById('commande-input').value = ''; currentCommande = null; };
+window.openNameModal = (allowSkip) => {
+  document.getElementById('name-input').value = currentOperator || '';
+  const cancelBtn = document.querySelector('#name-modal .btn-cancel');
+  cancelBtn.style.display = allowSkip ? 'block' : 'none';
+  document.getElementById('name-modal').classList.add('active');
+  setTimeout(() => document.getElementById('name-input').focus(), 100);
+};
 
+window.saveName = () => {
+  const val = document.getElementById('name-input').value.trim();
+  if (!val) { toast('Entrez votre prénom', 'err'); return; }
+  currentOperator = val;
+  localStorage.setItem('stema_operator', val);
+  document.getElementById('operator-display').textContent = val;
+  document.getElementById('name-modal').classList.remove('active');
+  toast('👷 Bonjour ' + val + ' !', 'ok');
+};
+
+window.skipName = () => {
+  document.getElementById('name-modal').classList.remove('active');
+};
+
+document.getElementById('name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') window.saveName();
+});
+
+// ── COMPTEUR STOCKAGE ──
+async function loadStorageStats() {
+  try {
+    const snap = await getDocs(collection(db, 'photos'));
+    let totalBytes = 0;
+    snap.docs.forEach(d => { totalBytes += (d.data().fileSize || 0); });
+    const maxBytes = 5 * 1024 * 1024 * 1024; // 5 Go
+    const pct = Math.min((totalBytes / maxBytes) * 100, 100);
+    const used = formatBytes(totalBytes);
+    document.getElementById('storage-used').textContent = used;
+    document.getElementById('storage-fill').style.width = pct + '%';
+    document.getElementById('storage-wrap').style.display = 'block';
+    // Changer couleur si proche limite
+    const fill = document.getElementById('storage-fill');
+    if (pct > 80) fill.style.background = '#ef4444';
+    else if (pct > 60) fill.style.background = '#f59e0b';
+  } catch(e) { console.warn('Stats storage:', e); }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' Go';
+}
+
+// ── SCREENS ──
+function showScreen(s) {
+  document.getElementById('screen-scanner').style.display  = s === 'scanner'  ? 'flex'  : 'none';
+  document.getElementById('screen-commande').style.display = s === 'commande' ? 'block' : 'none';
+  document.getElementById('screen-galerie').style.display  = s === 'galerie'  ? 'block' : 'none';
+}
+
+window.goBack = () => {
+  showScreen('scanner');
+  document.getElementById('commande-input').value = '';
+  currentCommande = null;
+};
+
+// ── OUVRIR COMMANDE ──
 window.go = async (id) => {
   const commandeId = (id || document.getElementById('commande-input').value.trim()).toUpperCase();
   if (!commandeId) { toast('Saisissez un numéro de commande', 'err'); return; }
@@ -172,27 +395,38 @@ window.go = async (id) => {
   hideLoader(); showScreen('commande'); loadPhotos(commandeId);
 };
 
+// ── CHARGER PHOTOS ──
 async function loadPhotos(commandeId) {
   try {
-    const q = query(
-      collection(db, 'photos'),
-      where('commandeId', '==', commandeId),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(db, 'photos'), where('commandeId', '==', commandeId), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
     renderPhotos(snap.docs.map(d => ({ ...d.data(), _id: d.id })));
   } catch(e) {
     console.error('Erreur loadPhotos:', e);
-    toast('Erreur chargement photos: ' + e.message, 'err');
+    toast('Erreur: ' + e.message, 'err');
   }
 }
 
+// ── RENDER PHOTOS ──
 function renderPhotos(photos) {
   const grid = document.getElementById('photos-grid');
   if (!photos.length) { grid.innerHTML = '<div class="no-photos">Aucune photo</div>'; return; }
-  grid.innerHTML = photos.map(p => `
-    <div class="photo-card">
+  grid.innerHTML = photos.map(p => buildPhotoCard(p)).join('');
+  grid.querySelectorAll('.comment-input').forEach(attachCommentEvents);
+  grid.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      openDeleteModal(btn.dataset.docid, btn.dataset.url, document.getElementById('card-' + btn.dataset.docid));
+    });
+  });
+}
+
+function buildPhotoCard(p) {
+  return `
+    <div class="photo-card" id="card-${p._id}">
       <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+      <button class="btn-delete" data-docid="${p._id}" data-url="${p.url}">✕</button>
+      ${p.operator ? `<div class="photo-operator">👷 ${p.operator}</div>` : ''}
       <div class="comment-wrap">
         <textarea class="comment-input" rows="2"
           placeholder="💬 Ajouter un commentaire..."
@@ -200,18 +434,15 @@ function renderPhotos(photos) {
         >${p.comment || ''}</textarea>
       </div>
       <div class="photo-date">${formatDate(p.createdAt)}</div>
-    </div>`).join('');
-
-  grid.querySelectorAll('.comment-input').forEach(attachCommentEvents);
+    </div>`;
 }
 
-// Sauvegarde automatique sur blur ou Entrée — zéro clic si pas de commentaire
+// ── COMMENTAIRE ──
 function attachCommentEvents(input) {
   let lastSaved = input.value.trim();
-
   const save = async () => {
     const val = input.value.trim();
-    if (val === lastSaved) return; // rien de changé, on ne fait rien
+    if (val === lastSaved) return;
     lastSaved = val;
     const docId = input.dataset.docid;
     if (!docId) return;
@@ -221,19 +452,46 @@ function attachCommentEvents(input) {
       input.classList.remove('saving');
       input.classList.add('saved');
       setTimeout(() => input.classList.remove('saved'), 1500);
-    } catch(e) {
-      input.classList.remove('saving');
-      toast('Erreur sauvegarde commentaire', 'err');
-    }
+    } catch(e) { input.classList.remove('saving'); toast('Erreur sauvegarde', 'err'); }
   };
-
   input.addEventListener('blur', save);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
-  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); } });
   input.addEventListener('click', (e) => e.stopPropagation());
 }
 
+// ── SUPPRESSION ──
+function openDeleteModal(docId, url, cardEl) {
+  pendingDelete = { docId, url, cardEl };
+  document.getElementById('delete-modal').classList.add('active');
+}
+window.closeDeleteModal = () => {
+  document.getElementById('delete-modal').classList.remove('active');
+  pendingDelete = null;
+};
+document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+  if (!pendingDelete) return;
+  const { docId, url, cardEl } = pendingDelete;
+  closeDeleteModal();
+  loader('Suppression...');
+  try {
+    await deleteDoc(doc(db, 'photos', docId));
+    try {
+      const urlObj = new URL(url);
+      const pathEncoded = urlObj.pathname.split('/o/')[1]?.split('?')[0];
+      if (pathEncoded) await deleteObject(ref(storage, decodeURIComponent(pathEncoded)));
+    } catch(e) { console.warn('Storage delete:', e); }
+    cardEl?.remove();
+    const grid = document.getElementById('photos-grid');
+    if (grid && !grid.querySelector('.photo-card')) grid.innerHTML = '<div class="no-photos">Aucune photo</div>';
+    // Retirer de la galerie si elle est affichée
+    galleriePhotos = galleriePhotos.filter(p => p._id !== docId);
+    toast('🗑️ Photo supprimée', 'ok');
+    loadStorageStats();
+  } catch(e) { toast('Erreur suppression', 'err'); }
+  finally { hideLoader(); }
+});
+
+// ── UPLOAD PHOTO ──
 window.addPhoto = async (event) => {
   const file = event.target.files[0];
   if (!file || !currentCommande) return;
@@ -251,10 +509,7 @@ window.addPhoto = async (event) => {
       <div class="upload-progress"><div class="upload-bar" id="bar-${cardId}"></div></div>
     </div>
     <div class="comment-wrap">
-      <textarea class="comment-input" rows="2"
-        placeholder="💬 Ajouter un commentaire..."
-        id="comment-${cardId}"
-      ></textarea>
+      <textarea class="comment-input" rows="2" placeholder="💬 Ajouter un commentaire..." id="comment-${cardId}"></textarea>
     </div>
     <div class="photo-date" id="date-${cardId}">Envoi en cours...</div>`;
   grid.prepend(card);
@@ -264,6 +519,7 @@ window.addPhoto = async (event) => {
   const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
   const blob = new Blob([ab], { type: "image/jpeg" });
+  const fileSize = blob.size;
   const path = `photos/${currentCommande}/${Date.now()}.jpg`;
   const storRef = ref(storage, path);
   const task = uploadBytesResumable(storRef, blob);
@@ -274,39 +530,199 @@ window.addPhoto = async (event) => {
       const bar = document.getElementById('bar-' + cardId);
       if (bar) bar.style.width = pct + '%';
     },
-    (err) => { document.getElementById(cardId)?.remove(); toast('Erreur upload', 'err'); },
+    () => { document.getElementById(cardId)?.remove(); toast('Erreur upload', 'err'); },
     async () => {
       const url = await getDownloadURL(task.snapshot.ref);
       const now = new Date().toISOString();
       const commentDraft = document.getElementById('comment-' + cardId)?.value.trim() || '';
-      const docRef = await addDoc(collection(db, 'photos'), {
-        commandeId: currentCommande, url, createdAt: now,
+      const photoData = {
+        commandeId: currentCommande,
+        url,
+        createdAt: now,
+        fileSize,
+        ...(currentOperator && { operator: currentOperator }),
         ...(commentDraft && { comment: commentDraft })
-      });
+      };
+      const docRef = await addDoc(collection(db, 'photos'), photoData);
 
-      // ✅ On remplace SEULEMENT la zone d'upload par l'image — le textarea reste intact
+      // Remplacer zone upload par photo
       const uploadingEl = document.getElementById('uploading-' + cardId);
       if (uploadingEl) {
-        const img = document.createElement('a');
-        img.href = url; img.target = '_blank';
-        img.innerHTML = `<img src="${url}" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">`;
-        uploadingEl.replaceWith(img);
+        const a = document.createElement('a');
+        a.href = url; a.target = '_blank';
+        a.innerHTML = `<img src="${url}" loading="lazy" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">`;
+        uploadingEl.replaceWith(a);
       }
-
-      // Mettre à jour la date et attacher le data-docid au textarea
+      // Ajouter bouton suppression + nom opérateur
+      const c = document.getElementById(cardId);
+      if (c) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete'; delBtn.title = 'Supprimer';
+        delBtn.dataset.docid = docRef.id; delBtn.dataset.url = url;
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openDeleteModal(docRef.id, url, c); });
+        c.appendChild(delBtn);
+        if (currentOperator) {
+          const opDiv = document.createElement('div');
+          opDiv.className = 'photo-operator';
+          opDiv.textContent = '👷 ' + currentOperator;
+          c.querySelector('.comment-wrap').before(opDiv);
+        }
+      }
       const dateEl = document.getElementById('date-' + cardId);
       if (dateEl) dateEl.textContent = formatDate(now);
       const textarea = document.getElementById('comment-' + cardId);
-      if (textarea) {
-        textarea.dataset.docid = docRef.id;
-        attachCommentEvents(textarea);
-      }
-
+      if (textarea) { textarea.dataset.docid = docRef.id; attachCommentEvents(textarea); }
       toast('✅ Photo ajoutée !', 'ok');
+      loadStorageStats();
     }
   );
 };
 
+// ── GALERIE GLOBALE ──
+window.openGalerie = async () => {
+  showScreen('galerie');
+  // Initialiser dates par défaut : 30 derniers jours
+  const now = new Date();
+  const from = new Date(); from.setDate(from.getDate() - 30);
+  document.getElementById('filter-to').value = now.toISOString().split('T')[0];
+  document.getElementById('filter-from').value = from.toISOString().split('T')[0];
+  await applyFilter();
+};
+
+window.applyFilter = async () => {
+  loader('Chargement...');
+  try {
+    const fromVal = document.getElementById('filter-from').value;
+    const toVal   = document.getElementById('filter-to').value;
+    const fromISO = fromVal ? new Date(fromVal).toISOString() : null;
+    const toISO   = toVal   ? new Date(toVal + 'T23:59:59').toISOString() : null;
+
+    let q;
+    if (fromISO && toISO) {
+      q = query(collection(db, 'photos'), where('createdAt', '>=', fromISO), where('createdAt', '<=', toISO), orderBy('createdAt', 'desc'));
+    } else if (fromISO) {
+      q = query(collection(db, 'photos'), where('createdAt', '>=', fromISO), orderBy('createdAt', 'desc'));
+    } else {
+      q = query(collection(db, 'photos'), orderBy('createdAt', 'desc'), limit(200));
+    }
+
+    const snap = await getDocs(q);
+    galleriePhotos = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+
+    // Grouper par commande
+    const byCommande = {};
+    galleriePhotos.forEach(p => {
+      if (!byCommande[p.commandeId]) byCommande[p.commandeId] = [];
+      byCommande[p.commandeId].push(p);
+    });
+
+    document.getElementById('gal-subtitle').textContent =
+      `${galleriePhotos.length} photo${galleriePhotos.length > 1 ? 's' : ''} · ${Object.keys(byCommande).length} commande${Object.keys(byCommande).length > 1 ? 's' : ''}`;
+
+    const content = document.getElementById('gal-content');
+    content.innerHTML = '';
+
+    if (!galleriePhotos.length) {
+      content.innerHTML = '<div class="gal-empty">Aucune photo sur cette période</div>';
+      document.getElementById('btn-export').disabled = true;
+      hideLoader(); return;
+    }
+
+    document.getElementById('btn-export').disabled = false;
+
+    Object.entries(byCommande).forEach(([cmdId, cmdPhotos]) => {
+      const block = document.createElement('div');
+      block.className = 'gal-commande-block';
+      block.innerHTML = `<div class="gal-commande-label" onclick="window.go('${cmdId}')">📋 N° ${cmdId} — ${cmdPhotos.length} photo${cmdPhotos.length > 1 ? 's' : ''}</div>`;
+      const grid = document.createElement('div');
+      grid.className = 'photos-grid';
+      cmdPhotos.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'photo-card'; card.id = 'gcard-' + p._id;
+        card.innerHTML = `
+          <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+          <button class="btn-delete" data-docid="${p._id}" data-url="${p.url}">✕</button>
+          ${p.operator ? `<div class="photo-operator">👷 ${p.operator}</div>` : ''}
+          ${p.comment ? `<div class="comment-wrap"><div style="font-size:11px;color:#555;font-style:italic;padding:4px 2px;">💬 ${p.comment}</div></div>` : ''}
+          <div class="photo-date">${formatDate(p.createdAt)}</div>`;
+        card.querySelector('.btn-delete').addEventListener('click', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          openDeleteModal(p._id, p.url, card);
+        });
+        grid.appendChild(card);
+      });
+      block.appendChild(grid);
+      content.appendChild(block);
+    });
+  } catch(e) {
+    console.error(e); toast('Erreur galerie: ' + e.message, 'err');
+  } finally { hideLoader(); }
+};
+
+// ── EXPORT ZIP ──
+window.exportZip = async () => {
+  if (!galleriePhotos.length) return;
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true;
+  btn.textContent = '⏳ Export...';
+  loader('Création du ZIP...');
+  try {
+    const zip = new JSZip();
+    // Grouper par commande → dossiers dans le ZIP
+    const byCommande = {};
+    galleriePhotos.forEach(p => {
+      if (!byCommande[p.commandeId]) byCommande[p.commandeId] = [];
+      byCommande[p.commandeId].push(p);
+    });
+
+    let count = 0;
+    for (const [cmdId, photos] of Object.entries(byCommande)) {
+      const folder = zip.folder('Commande_' + cmdId);
+      for (const p of photos) {
+        try {
+          const resp = await fetch(p.url);
+          const blob = await resp.blob();
+          const d = new Date(p.createdAt);
+          const dateStr = d.toLocaleDateString('fr-FR').replace(/\//g, '-');
+          const timeStr = d.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}).replace(':', 'h');
+          const opStr = p.operator ? '_' + p.operator.replace(/\s/g, '') : '';
+          const filename = `${dateStr}_${timeStr}${opStr}.jpg`;
+          folder.file(filename, blob);
+          count++;
+          document.getElementById('loader-text').textContent = `Export ${count}/${galleriePhotos.length}...`;
+        } catch(e) { console.warn('Skip photo:', e); }
+      }
+    }
+
+    // Ajouter un fichier index CSV
+    const csvLines = ['Commande,Date,Operateur,Commentaire,URL'];
+    galleriePhotos.forEach(p => {
+      csvLines.push([
+        p.commandeId,
+        formatDate(p.createdAt),
+        p.operator || '',
+        (p.comment || '').replace(/,/g, ';'),
+        p.url
+      ].join(','));
+    });
+    zip.file('index.csv', csvLines.join('\n'));
+
+    const fromVal = document.getElementById('filter-from').value || 'all';
+    const toVal   = document.getElementById('filter-to').value   || 'all';
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    saveAs(zipBlob, `stema-photos_${fromVal}_${toVal}.zip`);
+    toast('✅ ZIP téléchargé !', 'ok');
+  } catch(e) {
+    console.error(e); toast('Erreur export: ' + e.message, 'err');
+  } finally {
+    hideLoader();
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exporter ZIP';
+  }
+};
+
+// ── COMPRESSION ──
 function compressImage(file, maxSize, quality) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -329,6 +745,7 @@ function compressImage(file, maxSize, quality) {
   });
 }
 
+// ── QR ──
 window.openQR = async () => {
   try {
     qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
@@ -338,10 +755,8 @@ window.openQR = async () => {
     scanFrame();
   } catch(e) { toast('Accès caméra refusé', 'err'); }
 };
-
 function scanFrame() {
-  const video = document.getElementById('qr-video');
-  const canvas = document.getElementById('qr-canvas');
+  const video = document.getElementById('qr-video'), canvas = document.getElementById('qr-canvas');
   if (!qrStream) return;
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -352,13 +767,13 @@ function scanFrame() {
   }
   qrTimer = requestAnimationFrame(scanFrame);
 }
-
 window.closeQR = () => {
   if (qrTimer) { cancelAnimationFrame(qrTimer); qrTimer = null; }
   if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
   document.getElementById('qr-overlay').classList.remove('active');
 };
 
+// ── UTILITAIRES ──
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -371,6 +786,9 @@ function toast(msg, type) {
   t.textContent = msg; t.className = 'toast ' + (type || '');
   t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500);
 }
+
+// ── INIT ──
+initOperator();
 document.getElementById('commande-input').focus();
 </script>
 </body>
