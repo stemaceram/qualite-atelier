@@ -35,8 +35,7 @@
     #panel-client{display:none}
     .scan-card{background:#fff;border-radius:24px;padding:24px 20px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.35)}
     .scan-label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-    #commande-input{width:100%;padding:14px 16px;font-size:20px;font-weight:700;border:2px solid #e8e8e8;border-radius:14px;outline:none;color:#1a1a2e;margin-bottom:12px}
-    #commande-input:focus{border-color:#0f3460}
+    /* #commande-input now in .commande-input-wrap */
 
     /* Autocomplete client */
     .client-search-wrap{position:relative;margin-bottom:12px}
@@ -51,6 +50,13 @@
     .client-empty{padding:14px 16px;font-size:13px;color:#bbb;text-align:center}
 
     .btn-go{width:100%;padding:16px;background:#0f3460;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
+    .commande-input-wrap{display:flex;gap:8px;background:#fff;border-radius:18px;padding:6px 6px 6px 16px;box-shadow:0 12px 40px rgba(0,0,0,0.25);align-items:center;width:100%;max-width:360px}
+    #commande-input{flex:1;min-width:0;font-size:22px;font-weight:700;border:none;outline:none;color:#1a1a2e;background:transparent;padding:8px 0}
+    #commande-input::placeholder{color:#ccc;font-weight:400;font-size:18px}
+    .btn-qr-inline{width:48px;height:48px;min-width:48px;background:#f0f4ff;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .btn-qr-inline:active{background:#dde6ff}
+    .btn-valider{width:100%;max-width:360px;margin-top:10px;padding:16px;background:#fff;color:#0f3460;border:none;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+    .btn-valider:active{background:#f0f4ff}
     .operator-row{display:flex;align-items:center;gap:8px;margin-top:16px;color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer}
     .operator-row span{font-weight:600;color:rgba(255,255,255,0.85)}
     .btn-archive-link{position:absolute;bottom:max(env(safe-area-inset-bottom),20px);right:20px;color:rgba(255,255,255,0.3);font-size:11px;font-weight:600;background:none;border:none;cursor:pointer;letter-spacing:0.5px;padding:6px}
@@ -228,12 +234,13 @@
 
   <!-- Panel commande -->
   <div id="panel-commande">
-    </button>
-    <div class="scan-card">
-      <div class="scan-label">Numéro de commande</div>
+    <div class="commande-input-wrap">
       <input type="text" id="commande-input" placeholder="N° de commande" autocomplete="off" autocorrect="off" autocapitalize="characters" inputmode="numeric" pattern="[0-9]*" onkeydown="if(event.key==='Enter') goCommande()">
-      <button class="btn-go" onclick="goCommande()">Valider</button>
+      <button class="btn-qr-inline" onclick="openQR()" title="Scanner QR">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f3460" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 17h3v3M14 20h3"/></svg>
+      </button>
     </div>
+    <button class="btn-valider" onclick="goCommande()">Valider</button>
   </div>
 
   <!-- Panel client -->
