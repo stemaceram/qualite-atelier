@@ -140,6 +140,17 @@
     .arch-size{font-size:10px;color:#bbb}
     .arch-empty{text-align:center;color:#bbb;font-size:14px;padding:40px}
 
+    /* DOSSIER TOOLBAR */
+    .dossier-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+    .dossier-search-wrap{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;padding:9px 12px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+    .dossier-search-wrap:focus-within{border-color:#0f3460}
+    #dossier-search{flex:1;border:none;outline:none;font-size:14px;color:#1a1a2e;background:transparent}
+    #dossier-search::placeholder{color:#ccc}
+    .dossier-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e8eef7}
+    .dossier-section-header span:first-child{font-size:14px;font-weight:700;color:#1a1a2e}
+    .dossier-section-count{font-size:12px;font-weight:700;color:#0f3460;background:#e8eef7;padding:3px 10px;border-radius:20px}
+    .dossier-empty-section{font-size:13px;color:#bbb;padding:12px 0;text-align:center}
+
     /* MODALE */
     .modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center}
     .modal-overlay.active{display:flex}
@@ -277,14 +288,35 @@
 
     <!-- DOSSIERS -->
     <div class="tab-content" id="tab-dossiers">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:700">Tous les dossiers</div>
-        <button class="btn-sm btn-primary" onclick="loadDossiers()" style="background:#0f3460;color:#fff">↻ Rafraîchir</button>
+      <!-- Barre recherche + filtre -->
+      <div class="dossier-toolbar">
+        <div class="dossier-search-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.2" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="dossier-search" placeholder="Rechercher une commande ou un client..." oninput="filterDossiers()" autocomplete="off">
+          <button id="dossier-clear" onclick="clearDossierSearch()" style="display:none;background:none;border:none;color:#bbb;cursor:pointer;font-size:18px;padding:0 4px">×</button>
+        </div>
+        <button class="btn-sm" style="background:#0f3460;color:#fff;flex-shrink:0" onclick="loadDossiers()">↻</button>
       </div>
-      <div id="dossiers-list"><div class="feed-empty">Chargement...</div></div>
+
+      <!-- Sections commandes + clients -->
+      <div id="dossiers-commandes-section">
+        <div class="dossier-section-header">
+          <span>📋 Commandes</span>
+          <span class="dossier-section-count" id="count-commandes">—</span>
+        </div>
+        <div id="dossiers-commandes"><div class="feed-empty">Chargement...</div></div>
+      </div>
+
+      <div id="dossiers-clients-section" style="margin-top:20px">
+        <div class="dossier-section-header">
+          <span>👤 Clients</span>
+          <span class="dossier-section-count" id="count-clients">—</span>
+        </div>
+        <div id="dossiers-clients"><div class="feed-empty">Chargement...</div></div>
+      </div>
     </div>
 
-    <!-- ARCHIVE -->
+<!-- ARCHIVE -->
     <div class="tab-content" id="tab-archive">
       <div class="archive-filters">
         <div class="filter-row">
@@ -457,9 +489,11 @@ window.markAllRead = async()=>{
 };
 
 // ── DOSSIERS ──
+let allFolders = []; // cache pour le filtrage
+
 window.loadDossiers = async() => {
-  const list = document.getElementById('dossiers-list');
-  list.innerHTML = '<div class="feed-empty">Chargement...</div>';
+  document.getElementById('dossiers-commandes').innerHTML = '<div class="feed-empty">Chargement...</div>';
+  document.getElementById('dossiers-clients').innerHTML = '<div class="feed-empty">Chargement...</div>';
   try {
     const q = query(collection(db,'photos'), orderBy('createdAt','desc'));
     const snap = await getDocs(q);
@@ -469,20 +503,41 @@ window.loadDossiers = async() => {
       if(!byFolder[p.commandeId]) byFolder[p.commandeId]=[];
       byFolder[p.commandeId].push(p);
     });
-    if(!Object.keys(byFolder).length){list.innerHTML='<div class="feed-empty">Aucun dossier</div>';return;}
-    list.innerHTML='';
-    Object.entries(byFolder).forEach(([folderId,fps])=>{
-      const isClient=folderId.startsWith('CLIENT_');
-      const label=isClient?(fps[0].clientName||folderId.replace('CLIENT_','').replace(/_/g,' ')):folderId;
-      const icon=isClient?'👤':'📋';
-      const minDate=new Date(Math.min(...fps.map(p=>new Date(p.createdAt))));
-      const block=document.createElement('div');block.className='folder-block';
-      const fid='folder-'+folderId.replace(/[^a-zA-Z0-9]/g,'_');
-      block.innerHTML=`
+    // Séparer commandes et clients
+    allFolders = Object.entries(byFolder).map(([folderId, fps]) => ({
+      folderId, fps,
+      isClient: folderId.startsWith('CLIENT_'),
+      label: folderId.startsWith('CLIENT_') ? (fps[0].clientName||folderId.replace('CLIENT_','').replace(/_/g,' ')) : folderId
+    }));
+    renderDossiers(allFolders);
+  } catch(e) { console.error(e); }
+};
+
+function renderDossiers(folders) {
+  const commandes = folders.filter(f => !f.isClient);
+  const clients   = folders.filter(f =>  f.isClient);
+
+  document.getElementById('count-commandes').textContent = commandes.length;
+  document.getElementById('count-clients').textContent   = clients.length;
+
+  const renderList = (list, containerId) => {
+    const el = document.getElementById(containerId);
+    if (!list.length) { el.innerHTML = '<div class="dossier-empty-section">Aucun dossier</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(({folderId, fps, isClient, label}) => {
+      const minDate = new Date(Math.min(...fps.map(p=>new Date(p.createdAt))));
+      const block = document.createElement('div');
+      block.className = 'folder-block';
+      block.dataset.label = label.toLowerCase();
+      const fid = 'folder-' + folderId.replace(/[^a-zA-Z0-9]/g,'_');
+      block.innerHTML = `
         <div class="folder-header" onclick="toggleFolder('${fid}',this)">
           <div class="folder-header-left">
-            <div class="folder-icon">${icon}</div>
-            <div><div class="folder-name">${isClient?'':' N° '}${label}</div><div class="folder-meta">Depuis le ${minDate.toLocaleDateString('fr-FR')}</div></div>
+            <div class="folder-icon">${isClient?'👤':'📋'}</div>
+            <div>
+              <div class="folder-name">${isClient ? label : 'N° '+label}</div>
+              <div class="folder-meta">Depuis le ${minDate.toLocaleDateString('fr-FR')}</div>
+            </div>
           </div>
           <div class="folder-header-right">
             <div class="folder-count">${fps.length} photo${fps.length>1?'s':''}</div>
@@ -502,11 +557,34 @@ window.loadDossiers = async() => {
             </div>`).join('')}
         </div>
         <div class="folder-actions" id="faction-${fid}" style="display:none">
-          <button class="btn-sm btn-ghost" onclick="askDeleteFolder('${folderId}',event)" style="background:#fff0f0;color:#ef4444;border:1px solid #fecaca">🗑️ Supprimer le dossier</button>
+          <button class="btn-sm" onclick="askDeleteFolder('${folderId}',event)" style="background:#fff0f0;color:#ef4444;border:1px solid #fecaca">🗑️ Supprimer le dossier</button>
         </div>`;
-      list.appendChild(block);
+      el.appendChild(block);
     });
-  } catch(e){console.error(e);list.innerHTML='<div class="feed-empty">Erreur chargement</div>';}
+  };
+
+  renderList(commandes, 'dossiers-commandes');
+  renderList(clients, 'dossiers-clients');
+
+  // Masquer sections vides
+  document.getElementById('dossiers-commandes-section').style.display = commandes.length ? 'block' : 'none';
+  document.getElementById('dossiers-clients-section').style.display = clients.length ? 'block' : 'none';
+}
+
+window.filterDossiers = () => {
+  const val = document.getElementById('dossier-search').value.trim().toLowerCase();
+  document.getElementById('dossier-clear').style.display = val ? 'block' : 'none';
+  if (!val) { renderDossiers(allFolders); return; }
+  const filtered = allFolders.filter(f =>
+    f.label.toLowerCase().includes(val) || f.folderId.toLowerCase().includes(val)
+  );
+  renderDossiers(filtered);
+};
+
+window.clearDossierSearch = () => {
+  document.getElementById('dossier-search').value = '';
+  document.getElementById('dossier-clear').style.display = 'none';
+  renderDossiers(allFolders);
 };
 
 window.toggleFolder=(id,header)=>{
