@@ -3,348 +3,521 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Qualité — Stema</title>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <title>Dashboard Qualité Stema</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
-    .header{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,0.2)}
+
+    /* HEADER */
+    .header{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
     .header-left{display:flex;align-items:center;gap:14px}
-    .header-logo{background:#fff;border-radius:12px;padding:6px 12px}
-    .header-logo img{height:34px;display:block}
-    .header-title{color:#fff;font-size:20px;font-weight:800}
-    .header-subtitle{color:rgba(255,255,255,0.45);font-size:12px;margin-top:1px}
-    .header-status{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.6);font-size:13px}
-    .status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-    .layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 68px)}
-    .sidebar{background:#fff;border-right:1px solid #e8e8e8;overflow-y:auto}
-    .sidebar-section{padding:18px;border-bottom:1px solid #f0f0f0}
-    .s-title{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .stat-card{background:#f8f9fc;border-radius:12px;padding:12px;text-align:center}
-    .stat-value{font-size:22px;font-weight:800;color:#0f3460}
-    .stat-label{font-size:10px;color:#999;margin-top:2px}
-    .notif-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
-    .notif-label{font-size:13px;font-weight:600}
-    .notif-sub{font-size:11px;color:#aaa;margin-top:2px}
+    .header-logo{background:#fff;border-radius:10px;padding:5px 10px;font-size:13px;font-weight:800;color:#0f3460}
+    .header-title{color:#fff;font-size:18px;font-weight:800}
+    .header-sub{color:rgba(255,255,255,0.45);font-size:12px}
+    .live-badge{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.6);font-size:12px}
+    .live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+    /* LAYOUT */
+    .layout{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 60px)}
+
+    /* SIDEBAR */
+    .sidebar{background:#fff;border-right:1px solid #e8e8e8;padding:20px;overflow-y:auto}
+    .sidebar-section{margin-bottom:24px}
+    .sidebar-section-title{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+    .stat-card{background:#f8f9ff;border-radius:14px;padding:14px;text-align:center}
+    .stat-value{font-size:28px;font-weight:800;color:#0f3460}
+    .stat-label{font-size:11px;color:#888;margin-top:2px}
+
+    /* NOTIF SETTINGS */
+    .setting-row{margin-bottom:14px}
+    .setting-label{font-size:12px;font-weight:700;color:#555;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+    .setting-input{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e;background:#fff}
+    .setting-input:focus{border-color:#0f3460}
+    .setting-input::placeholder{color:#ccc}
+
+    /* TOGGLE */
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f2f5}
+    .toggle-label{font-size:14px;font-weight:600;color:#1a1a2e}
+    .toggle-desc{font-size:11px;color:#aaa;margin-top:2px}
     .toggle{position:relative;width:44px;height:24px;flex-shrink:0}
     .toggle input{opacity:0;width:0;height:0}
-    .toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:24px;cursor:pointer;transition:.3s}
-    .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
-    input:checked+.toggle-slider{background:#0f3460}
-    input:checked+.toggle-slider:before{transform:translateX(20px)}
-    .form-group{margin-bottom:12px}
-    .form-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-    .form-input{width:100%;padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;color:#1a1a2e;outline:none;background:#fafafa}
-    .form-input:focus{border-color:#0f3460;background:#fff}
-    .form-help{font-size:10px;color:#bbb;margin-top:3px}
-    .btn-primary{width:100%;padding:11px;background:#0f3460;color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
-    .btn-primary:hover{background:#1a4a80}
-    .btn-green{width:100%;padding:10px;background:#22c55e;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px}
+    .toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:24px;transition:0.2s;cursor:pointer}
+    .toggle-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s}
+    .toggle input:checked+.toggle-slider{background:#0f3460}
+    .toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+
+    /* SELECT */
+    .setting-select{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e;background:#fff}
+
+    /* BUTTONS */
+    .btn{width:100%;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
+    .btn-primary{background:#0f3460;color:#fff}
+    .btn-primary:hover{background:#16213e}
+    .btn-success{background:#22c55e;color:#fff}
+    .btn-success:hover{background:#16a34a}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-sm{padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+
+    /* HISTORIQUE */
     .notif-history{max-height:180px;overflow-y:auto}
-    .nh-item{padding:8px 10px;border-bottom:1px solid #f5f5f5;font-size:11px;display:flex;align-items:flex-start;gap:6px}
-    .nh-dot{width:6px;height:6px;border-radius:50%;margin-top:3px;flex-shrink:0}
-    .nh-dot.sent{background:#22c55e}
-    .nh-dot.fail{background:#ef4444}
-    .nh-time{color:#bbb;font-size:10px}
-    .main{padding:22px;overflow-y:auto;max-height:calc(100vh - 68px)}
-    .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-    .main-title{font-size:17px;font-weight:800}
-    .filters{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid #e8e8e8;background:#fff;cursor:pointer;color:#555;transition:all .15s}
-    .chip.active{background:#0f3460;color:#fff;border-color:#0f3460}
-    .feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-    .feed-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.07);transition:transform .15s,box-shadow .15s}
-    .feed-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
-    .feed-card.is-new{box-shadow:0 0 0 2px #22c55e,0 4px 16px rgba(34,197,94,0.2)}
-    .feed-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in}
-    .feed-body{padding:12px}
-    .feed-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
-    .badge{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
-    .badge-cmd{background:#e8eef7;color:#0f3460}
-    .badge-client{background:#fef3e8;color:#d97706}
-    .badge-new{background:#dcfce7;color:#16a34a}
-    .feed-title{font-size:14px;font-weight:700;margin-bottom:3px}
-    .feed-meta{font-size:11px;color:#aaa}
-    .feed-operator{font-size:11px;color:#0f3460;font-weight:700;margin-top:5px}
-    .feed-comment{font-size:11px;color:#555;font-style:italic;background:#f8f9fc;border-radius:8px;padding:6px 9px;margin-top:6px}
-    .feed-empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:#bbb}
-    .feed-empty-icon{font-size:48px;margin-bottom:12px}
-    .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;align-items:center;justify-content:center}
-    .lightbox.active{display:flex}
-    .lightbox img{max-width:92vw;max-height:92vh;border-radius:10px;object-fit:contain}
-    .lb-close{position:absolute;top:18px;right:22px;color:#fff;font-size:28px;cursor:pointer;background:none;border:none}
-    .toast{position:fixed;bottom:20px;right:20px;background:#1a1a2e;color:#fff;padding:11px 18px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(80px);transition:transform .25s cubic-bezier(.34,1.56,.64,1);z-index:600}
+    .notif-hist-item{font-size:11px;color:#666;padding:6px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between}
+    .notif-hist-item:last-child{border-bottom:none}
+    .hist-empty{font-size:12px;color:#ccc;text-align:center;padding:12px 0}
+
+    /* MAIN */
+    .main{padding:24px;overflow-y:auto}
+    .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .main-title{font-size:20px;font-weight:800}
+    .main-actions{display:flex;gap:8px}
+
+    /* TABS */
+    .tabs{display:flex;gap:4px;background:#e8eef7;border-radius:12px;padding:4px;width:fit-content;margin-bottom:20px}
+    .tab{padding:8px 18px;border-radius:8px;border:none;background:transparent;font-size:13px;font-weight:600;color:#888;cursor:pointer;transition:all 0.15s}
+    .tab.active{background:#fff;color:#0f3460;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+
+    /* FEED */
+    .feed-wrap{background:#fff;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden}
+    .feed-empty{padding:48px;text-align:center;color:#bbb;font-size:14px}
+    .feed-empty-icon{font-size:40px;margin-bottom:10px}
+
+    /* NOTIF ITEM */
+    .notif-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid #f8f8f8;cursor:pointer;transition:background 0.1s}
+    .notif-item:hover{background:#fafbff}
+    .notif-item.unread{background:#f0f4ff}
+    .notif-thumb{width:54px;height:54px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#f0f2f5}
+    .notif-thumb-ph{width:54px;height:54px;border-radius:10px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .notif-body{flex:1;min-width:0}
+    .notif-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .notif-title{font-size:13px;font-weight:700}
+    .notif-time{font-size:11px;color:#bbb;white-space:nowrap;flex-shrink:0}
+    .notif-desc{font-size:12px;color:#666;margin-top:2px}
+    .unread-dot{width:8px;height:8px;background:#0f3460;border-radius:50%;flex-shrink:0;margin-top:4px}
+
+    /* GALLERY */
+    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+    .gallery-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+    .gallery-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:pointer}
+    .gallery-card-body{padding:8px 10px}
+    .gallery-card-cmd{font-size:12px;font-weight:700;color:#0f3460}
+    .gallery-card-op{font-size:11px;color:#aaa}
+    .gallery-card-date{font-size:10px;color:#ccc}
+
+    /* DATE FILTER */
+    .filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .filter-input{padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e}
+    .filter-input:focus{border-color:#0f3460}
+
+    /* BADGE */
+    .badge{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:6px}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;transform:translateY(80px);transition:transform 0.25s;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
     .toast.show{transform:translateY(0)}
     .toast.ok{background:#22c55e}
     .toast.err{background:#ef4444}
-    @media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid #e8e8e8}.main{max-height:none}}
+
+    /* MARK ALL */
+    .feed-header{padding:14px 20px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center}
+    .feed-header-title{font-size:14px;font-weight:700}
+
+    @media(max-width:800px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{border-right:none;border-bottom:1px solid #e8e8e8}
+    }
   </style>
 </head>
 <body>
+
 <div class="toast" id="toast"></div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lb-close" onclick="closeLightbox()">✕</button>
-  <img id="lb-img" src="" alt="">
-</div>
-
+<!-- HEADER -->
 <div class="header">
   <div class="header-left">
-    <div class="header-logo"><img src="icon.png" alt="S" onerror="this.outerHTML='<span style=font-size:22px;font-weight:800;color:#0f3460>S</span>'"></div>
+    <div class="header-logo">STEMA</div>
     <div>
       <div class="header-title">Dashboard Qualité</div>
-      <div class="header-subtitle">Suivi temps réel — Stema</div>
+      <div class="header-sub">Suivi des photos atelier</div>
     </div>
   </div>
-  <div class="header-status"><div class="status-dot"></div><span id="conn">Connexion...</span></div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    En direct
+  </div>
 </div>
 
 <div class="layout">
+
   <!-- SIDEBAR -->
   <div class="sidebar">
 
+    <!-- STATS -->
     <div class="sidebar-section">
-      <div class="s-title">Statistiques</div>
+      <div class="sidebar-section-title">Statistiques</div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="s-today">—</div><div class="stat-label">Aujourd'hui</div></div>
-        <div class="stat-card"><div class="stat-value" id="s-week">—</div><div class="stat-label">7 derniers jours</div></div>
-        <div class="stat-card"><div class="stat-value" id="s-ops">—</div><div class="stat-label">Opérateurs</div></div>
-        <div class="stat-card"><div class="stat-value" id="s-total">—</div><div class="stat-label">Total photos</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-today">—</div><div class="stat-label">Aujourd'hui</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-week">—</div><div class="stat-label">7 derniers jours</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-ops">—</div><div class="stat-label">Opérateurs</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total photos</div></div>
       </div>
     </div>
 
+    <!-- NOTIFICATIONS EMAIL -->
     <div class="sidebar-section">
-      <div class="s-title">Notifications email</div>
-      <div class="notif-row">
-        <div><div class="notif-label">Activer</div><div class="notif-sub">Recevoir des emails lors d'ajouts de photos</div></div>
-        <label class="toggle"><input type="checkbox" id="notif-on"><span class="toggle-slider"></span></label>
+      <div class="sidebar-section-title">Notifications email</div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Activer</div>
+          <div class="toggle-desc">Recevoir des emails lors d'ajouts de photos</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="notif-enabled"><span class="toggle-slider"></span></label>
       </div>
-      <div id="notif-params" style="display:none">
-        <div class="form-group">
-          <div class="form-label">Email destinataire</div>
-          <input class="form-input" type="email" id="notif-email" placeholder="collaboratrice@stema.fr">
+
+      <div class="toggle-row" style="margin-bottom:14px">
+        <div>
+          <div class="toggle-label">Fréquence</div>
         </div>
-        <div class="form-group">
-          <div class="form-label">Fréquence</div>
-          <select class="form-input" id="notif-freq">
-            <option value="immediate">Immédiate (chaque photo)</option>
-            <option value="hourly">Résumé horaire</option>
-            <option value="daily">Résumé journalier (18h)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Condition</div>
-          <select class="form-input" id="notif-cond">
-            <option value="all">Toutes les photos</option>
-            <option value="commande">Commandes uniquement</option>
-            <option value="client">Clients uniquement</option>
-            <option value="comment">Avec commentaire seulement</option>
-          </select>
-        </div>
+        <select class="setting-select" id="notif-freq" style="width:auto">
+          <option value="immediate">Immédiat</option>
+          <option value="hourly">Résumé horaire</option>
+          <option value="daily">Résumé journalier</option>
+        </select>
       </div>
-      <button class="btn-primary" onclick="saveNotif()">💾 Sauvegarder</button>
+
+      <button class="btn btn-primary" onclick="saveNotifSettings()">💾 Sauvegarder</button>
     </div>
 
+    <!-- CONFIG EMAILJS -->
     <div class="sidebar-section">
-      <div class="s-title">Configuration EmailJS</div>
-      <div style="font-size:11px;color:#aaa;margin-bottom:10px">Compte gratuit sur <a href="https://emailjs.com" target="_blank" style="color:#0f3460;font-weight:700">emailjs.com</a> requis.<br>Le template doit avoir les variables : <code style="background:#f0f0f0;padding:1px 4px;border-radius:4px">to_email</code>, <code style="background:#f0f0f0;padding:1px 4px;border-radius:4px">subject</code>, <code style="background:#f0f0f0;padding:1px 4px;border-radius:4px">message</code></div>
-      <div class="form-group"><div class="form-label">Service ID</div><input class="form-input" id="ejs-svc" placeholder="service_xxxxxxx" style="font-family:monospace"></div>
-      <div class="form-group"><div class="form-label">Template ID</div><input class="form-input" id="ejs-tpl" placeholder="template_xxxxxxx" style="font-family:monospace"></div>
-      <div class="form-group"><div class="form-label">Public Key</div><input class="form-input" id="ejs-key" placeholder="xxxxxxxxxxxxxxx" style="font-family:monospace"></div>
-      <button class="btn-primary" onclick="saveEJS()">💾 Sauvegarder config</button>
-      <button class="btn-green" onclick="testEmail()">📧 Email test</button>
+      <div class="sidebar-section-title">Configuration EmailJS</div>
+      <div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.5">
+        Le template doit avoir les variables :
+        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">to_email</code>
+        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">subject</code>
+        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">message</code>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">Service ID</div>
+        <input class="setting-input" id="ejs-service" placeholder="service_xxxxxxx">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Template ID</div>
+        <input class="setting-input" id="ejs-template" placeholder="template_xxxxxxx">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Public Key</div>
+        <input class="setting-input" id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxx">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Email destinataire</div>
+        <input class="setting-input" type="email" id="ejs-to" placeholder="contact@stema-ceram.com">
+      </div>
+
+      <button class="btn btn-primary" onclick="saveEmailConfig()">💾 Sauvegarder config</button>
+      <button class="btn btn-success" onclick="sendTestEmail()">📧 Email test</button>
     </div>
 
+    <!-- HISTORIQUE NOTIFICATIONS -->
     <div class="sidebar-section">
-      <div class="s-title">Historique notifications</div>
-      <div class="notif-history" id="nh"><div style="color:#bbb;font-size:12px;padding:6px">Aucune notification</div></div>
+      <div class="sidebar-section-title">Historique notifications</div>
+      <div class="notif-history" id="notif-history">
+        <div class="hist-empty">Aucune notification envoyée</div>
+      </div>
     </div>
 
-  </div>
+  </div><!-- /sidebar -->
 
   <!-- MAIN -->
   <div class="main">
-    <div class="main-header">
-      <div class="main-title">📸 Flux photos <span id="feed-count" style="color:#aaa;font-weight:400;font-size:13px"></span></div>
-      <div class="filters">
-        <div class="chip active" onclick="setFilter('all',this)">Tout</div>
-        <div class="chip" onclick="setFilter('commande',this)">Commandes</div>
-        <div class="chip" onclick="setFilter('client',this)">Clients</div>
-        <div class="chip" onclick="setFilter('today',this)">Aujourd'hui</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('feed', this)">🔔 Flux photos <span class="badge" id="unread-badge" style="display:none">0</span></button>
+      <button class="tab" onclick="showTab('gallery', this)">🖼️ Galerie</button>
+    </div>
+
+    <!-- TAB FEED -->
+    <div id="tab-feed">
+      <div class="feed-wrap">
+        <div class="feed-header">
+          <div class="feed-header-title">Activité en temps réel</div>
+          <button class="btn-sm" style="background:#f0f2f5;color:#555" onclick="markAllRead()">Tout marquer lu</button>
+        </div>
+        <div id="feed-list"><div class="feed-empty"><div class="feed-empty-icon">📷</div>Chargement...</div></div>
       </div>
     </div>
-    <div class="feed" id="feed">
-      <div class="feed-empty"><div class="feed-empty-icon">📡</div>Connexion à Firebase...</div>
+
+    <!-- TAB GALLERY -->
+    <div id="tab-gallery" style="display:none">
+      <div class="filter-bar">
+        <input type="date" class="filter-input" id="gal-from">
+        <span style="color:#aaa;font-size:13px">→</span>
+        <input type="date" class="filter-input" id="gal-to">
+        <button class="btn-sm btn-primary" style="background:#0f3460;color:#fff" onclick="loadGallery()">Filtrer</button>
+        <span id="gal-count" style="font-size:12px;color:#888"></span>
+      </div>
+      <div class="gallery-grid" id="gallery-grid">
+        <div class="feed-empty" style="grid-column:1/-1">Sélectionnez une période</div>
+      </div>
     </div>
-  </div>
-</div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, query, orderBy, limit, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, query, orderBy, getDocs, updateDoc, doc, onSnapshot, where, limit, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const FB={apiKey:"AIzaSyBPI4-NYR0-Wn0UxQ3Z8W4WH7emy_58z44",authDomain:"qualite-atelier-v2.firebaseapp.com",projectId:"qualite-atelier-v2",storageBucket:"qualite-atelier-v2.firebasestorage.app",messagingSenderId:"995018724410",appId:"1:995018724410:web:cb1ac7247092e4d9579103"};
-const db = getFirestore(initializeApp(FB));
+const firebaseConfig = {
+  apiKey: "AIzaSyBPI4-NYR0-Wn0UxQ3Z8W4WH7emy_58z44",
+  authDomain: "qualite-atelier-v2.firebaseapp.com",
+  projectId: "qualite-atelier-v2",
+  storageBucket: "qualite-atelier-v2.firebasestorage.app",
+  messagingSenderId: "995018724410",
+  appId: "1:995018724410:web:cb1ac7247092e4d9579103"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-let allPhotos=[], currentFilter='all', notifSettings={}, notifQueue=[], notifHistory=[], initialized=false;
+let allNotifs = [];
+let settings = {};
+let notifHistory = [];
+let pendingSummary = [];
+let summaryTimer = null;
 
-// INIT
-loadSettings();
-startListener();
-setInterval(checkScheduledNotif, 5*60*1000);
-
-function loadSettings(){
-  // EmailJS
-  const ejs=JSON.parse(localStorage.getItem('stema_ejs')||'{}');
-  document.getElementById('ejs-svc').value=ejs.svc||'';
-  document.getElementById('ejs-tpl').value=ejs.tpl||'';
-  document.getElementById('ejs-key').value=ejs.key||'';
-  if(ejs.key) emailjs.init(ejs.key);
-  // Notif
-  notifSettings=JSON.parse(localStorage.getItem('stema_notif')||'{}');
-  document.getElementById('notif-on').checked=!!notifSettings.on;
-  document.getElementById('notif-freq').value=notifSettings.freq||'immediate';
-  document.getElementById('notif-cond').value=notifSettings.cond||'all';
-  document.getElementById('notif-email').value=notifSettings.email||'';
-  if(notifSettings.on) document.getElementById('notif-params').style.display='block';
-  // History
-  notifHistory=JSON.parse(localStorage.getItem('stema_nh')||'[]');
-  renderNH();
+// ── INIT ──
+function init() {
+  loadSettings();
+  loadStats();
+  startLiveListener();
+  // Dates galerie par défaut
+  const now = new Date(), from = new Date();
+  from.setDate(from.getDate() - 7);
+  document.getElementById('gal-to').value = now.toISOString().split('T')[0];
+  document.getElementById('gal-from').value = from.toISOString().split('T')[0];
 }
 
-document.getElementById('notif-on').addEventListener('change',function(){
-  document.getElementById('notif-params').style.display=this.checked?'block':'none';
-});
-
-window.saveNotif=()=>{
-  notifSettings={on:document.getElementById('notif-on').checked,freq:document.getElementById('notif-freq').value,cond:document.getElementById('notif-cond').value,email:document.getElementById('notif-email').value.trim()};
-  localStorage.setItem('stema_notif',JSON.stringify(notifSettings));
-  toast('✅ Paramètres sauvegardés','ok');
+// ── TABS ──
+window.showTab = (id, btn) => {
+  document.getElementById('tab-feed').style.display = id === 'feed' ? 'block' : 'none';
+  document.getElementById('tab-gallery').style.display = id === 'gallery' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (id === 'gallery') loadGallery();
 };
 
-window.saveEJS=()=>{
-  const cfg={svc:document.getElementById('ejs-svc').value.trim(),tpl:document.getElementById('ejs-tpl').value.trim(),key:document.getElementById('ejs-key').value.trim()};
-  localStorage.setItem('stema_ejs',JSON.stringify(cfg));
-  if(cfg.key) emailjs.init(cfg.key);
-  toast('✅ Config EmailJS sauvegardée','ok');
+// ── SETTINGS ──
+function loadSettings() {
+  const saved = localStorage.getItem('stema_dash_v2');
+  settings = saved ? JSON.parse(saved) : {
+    notifEnabled: false, freq: 'immediate',
+    ejsService: '', ejsTemplate: '', ejsPubkey: '', ejsTo: ''
+  };
+  document.getElementById('notif-enabled').checked = settings.notifEnabled || false;
+  document.getElementById('notif-freq').value = settings.freq || 'immediate';
+  document.getElementById('ejs-service').value = settings.ejsService || '';
+  document.getElementById('ejs-template').value = settings.ejsTemplate || '';
+  document.getElementById('ejs-pubkey').value = settings.ejsPubkey || '';
+  document.getElementById('ejs-to').value = settings.ejsTo || '';
+  // Historique
+  const hist = localStorage.getItem('stema_notif_history');
+  if (hist) { notifHistory = JSON.parse(hist); renderHistory(); }
+}
+
+window.saveNotifSettings = () => {
+  settings.notifEnabled = document.getElementById('notif-enabled').checked;
+  settings.freq = document.getElementById('notif-freq').value;
+  localStorage.setItem('stema_dash_v2', JSON.stringify(settings));
+  toast('✅ Paramètres sauvegardés', 'ok');
 };
 
-window.testEmail=async()=>{
-  const ok=await sendEmail('🧪 Test Dashboard Stema','Ceci est un email de test. La configuration EmailJS est correcte !');
-  toast(ok?'📧 Email envoyé !':'❌ Erreur — vérifiez la config',ok?'ok':'err');
+window.saveEmailConfig = () => {
+  settings.ejsService = document.getElementById('ejs-service').value.trim();
+  settings.ejsTemplate = document.getElementById('ejs-template').value.trim();
+  settings.ejsPubkey = document.getElementById('ejs-pubkey').value.trim();
+  settings.ejsTo = document.getElementById('ejs-to').value.trim();
+  localStorage.setItem('stema_dash_v2', JSON.stringify(settings));
+  toast('✅ Config EmailJS sauvegardée', 'ok');
 };
 
-async function sendEmail(subject,message){
-  const ejs=JSON.parse(localStorage.getItem('stema_ejs')||'{}');
-  const email=notifSettings.email;
-  if(!ejs.svc||!ejs.tpl||!ejs.key||!email) return false;
-  try{
-    await emailjs.send(ejs.svc,ejs.tpl,{to_email:email,subject,message});
-    addNH(subject,'sent'); return true;
-  }catch(e){addNH(subject+' (échec)','fail'); return false;}
+// ── STATS ──
+async function loadStats() {
+  try {
+    const snap = await getDocs(collection(db, 'photos'));
+    const photos = snap.docs.map(d => d.data());
+    const today = new Date(); today.setHours(0,0,0,0);
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7); weekAgo.setHours(0,0,0,0);
+    document.getElementById('stat-today').textContent = photos.filter(p => new Date(p.createdAt) >= today).length;
+    document.getElementById('stat-week').textContent = photos.filter(p => new Date(p.createdAt) >= weekAgo).length;
+    document.getElementById('stat-total').textContent = photos.length;
+    const ops = new Set(photos.map(p => p.operator).filter(Boolean));
+    document.getElementById('stat-ops').textContent = ops.size || '—';
+  } catch(e) { console.error(e); }
 }
 
-function addNH(text,status){
-  notifHistory.unshift({text,status,time:new Date().toISOString()});
-  if(notifHistory.length>50) notifHistory=notifHistory.slice(0,50);
-  localStorage.setItem('stema_nh',JSON.stringify(notifHistory));
-  renderNH();
-}
-
-function renderNH(){
-  const el=document.getElementById('nh');
-  if(!notifHistory.length){el.innerHTML='<div style="color:#bbb;font-size:12px;padding:6px">Aucune notification</div>';return;}
-  el.innerHTML=notifHistory.slice(0,20).map(n=>`<div class="nh-item"><div class="nh-dot ${n.status}"></div><div><div>${n.text}</div><div class="nh-time">${fmtDate(n.time)}</div></div></div>`).join('');
-}
-
-async function checkScheduledNotif(){
-  if(!notifSettings.on||notifSettings.freq==='immediate'||!notifQueue.length) return;
-  const now=new Date();
-  if(notifSettings.freq==='hourly'||(notifSettings.freq==='daily'&&now.getHours()===18&&now.getMinutes()<5)){
-    const count=notifQueue.length;
-    const lines=notifQueue.map(p=>`• ${p.type==='client'?'Client':'Commande'} ${p.clientId||p.commandeId} — ${p.operator||'Anonyme'} — ${fmtDate(p.createdAt)}`).join('\n');
-    const ok=await sendEmail(`📸 Résumé Qualité — ${count} photo${count>1?'s':''}`,`${count} nouvelle${count>1?'s':''} photo${count>1?'s':''} :\n\n${lines}`);
-    if(ok) notifQueue=[];
-  }
-}
-
-function startListener(){
-  const q=query(collection(db,'photos'),orderBy('createdAt','desc'),limit(300));
-  onSnapshot(q,(snap)=>{
-    document.getElementById('conn').textContent='En ligne — temps réel';
-    const photos=snap.docs.map(d=>({...d.data(),_id:d.id}));
-    if(initialized){
-      const prevIds=new Set(allPhotos.map(p=>p._id));
-      photos.filter(p=>!prevIds.has(p._id)).forEach(p=>handleNew(p));
-    }
-    initialized=true;
-    allPhotos=photos;
-    updateStats();
+// ── LIVE LISTENER ──
+function startLiveListener() {
+  const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(100));
+  onSnapshot(q, snap => {
+    allNotifs = snap.docs.map(d => ({...d.data(), _id: d.id}));
+    const unread = allNotifs.filter(n => !n.read).length;
+    const badge = document.getElementById('unread-badge');
+    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
     renderFeed();
-  },()=>{document.getElementById('conn').textContent='Hors ligne';});
+    // Nouvelles notifs → email si activé
+    snap.docChanges().filter(c => c.type === 'added').forEach(c => {
+      const notif = c.doc.data();
+      if (settings.notifEnabled) handleNewNotif(notif);
+    });
+    loadStats();
+  });
 }
 
-async function handleNew(p){
-  if(!notifSettings.on) return;
-  const c=notifSettings.cond||'all';
-  if(c==='commande'&&p.type!=='commande'&&p.type) return;
-  if(c==='client'&&p.type!=='client') return;
-  if(c==='comment'&&!p.comment) return;
-  if(notifSettings.freq==='immediate'){
-    const id=p.clientId||p.commandeId;
-    await sendEmail(`📸 Nouvelle photo — ${p.type==='client'?'Client':'Commande'} ${id}`,`Nouvelle photo ajoutée !\n\nType: ${p.type==='client'?'Client':'Commande'}\nN°/Nom: ${id}\nOpérateur: ${p.operator||'Anonyme'}\nDate: ${fmtDate(p.createdAt)}${p.comment?'\nCommentaire: '+p.comment:''}\n\nURL: ${p.url}`);
-  } else {
-    notifQueue.push(p);
+// ── RENDER FEED ──
+function renderFeed() {
+  const list = document.getElementById('feed-list');
+  if (!allNotifs.length) {
+    list.innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">📷</div>Aucune photo pour l\'instant</div>';
+    return;
   }
-}
-
-function updateStats(){
-  const now=new Date();
-  const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString();
-  const w0=new Date(now.getFullYear(),now.getMonth(),now.getDate()-7).toISOString();
-  document.getElementById('s-today').textContent=allPhotos.filter(p=>p.createdAt>=t0).length;
-  document.getElementById('s-week').textContent=allPhotos.filter(p=>p.createdAt>=w0).length;
-  document.getElementById('s-ops').textContent=new Set(allPhotos.map(p=>p.operator).filter(Boolean)).size||'—';
-  document.getElementById('s-total').textContent=allPhotos.length;
-}
-
-function renderFeed(){
-  const now=new Date();
-  const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString();
-  const recent=new Date(Date.now()-15*60*1000).toISOString();
-  let photos=allPhotos;
-  if(currentFilter==='commande') photos=photos.filter(p=>!p.type||p.type==='commande');
-  else if(currentFilter==='client') photos=photos.filter(p=>p.type==='client');
-  else if(currentFilter==='today') photos=photos.filter(p=>p.createdAt>=t0);
-  document.getElementById('feed-count').textContent=`(${photos.length})`;
-  if(!photos.length){document.getElementById('feed').innerHTML='<div class="feed-empty"><div class="feed-empty-icon">🔍</div>Aucune photo pour ce filtre</div>';return;}
-  document.getElementById('feed').innerHTML=photos.map(p=>{
-    const id=p.clientId||p.commandeId;
-    const isClient=p.type==='client';
-    const isNew=p.createdAt>recent;
-    return `<div class="feed-card${isNew?' is-new':''}">
-      <img class="feed-img" src="${p.url}" loading="lazy" alt="" onclick="openLightbox('${p.url}')">
-      <div class="feed-body">
-        <div class="feed-badges">
-          <span class="badge ${isClient?'badge-client':'badge-cmd'}">${isClient?'👤 Client':'📋 Commande'}</span>
-          ${isNew?'<span class="badge badge-new">🆕 Nouveau</span>':''}
+  list.innerHTML = allNotifs.map(n => {
+    const isClient = n.entityType === 'client';
+    const label = isClient ? '👤 ' + n.entityId.replace('CLIENT_','').replace(/_/g,' ') : '📋 N° ' + n.entityId;
+    const op = n.operator && n.operator !== 'Anonyme' ? `👷 ${n.operator}` : '';
+    return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n._id}', this)">
+      ${n.photoUrl
+        ? `<img class="notif-thumb" src="${n.photoUrl}" loading="lazy" alt="">`
+        : `<div class="notif-thumb-ph">📷</div>`}
+      <div class="notif-body">
+        <div class="notif-top">
+          <div class="notif-title">${label}</div>
+          <div class="notif-time">${timeAgo(n.createdAt)}</div>
         </div>
-        <div class="feed-title">${isClient?id:'N° '+id}</div>
-        <div class="feed-meta">${fmtDate(p.createdAt)}</div>
-        ${p.operator?`<div class="feed-operator">👷 ${p.operator}</div>`:''}
-        ${p.comment?`<div class="feed-comment">💬 ${p.comment}</div>`:''}
+        <div class="notif-desc">Nouvelle photo${op ? ' · ' + op : ''}</div>
       </div>
+      ${!n.read ? '<div class="unread-dot"></div>' : ''}
     </div>`;
   }).join('');
 }
 
-window.setFilter=(f,el)=>{currentFilter=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();};
-window.openLightbox=(url)=>{document.getElementById('lb-img').src=url;document.getElementById('lightbox').classList.add('active');};
-window.closeLightbox=()=>document.getElementById('lightbox').classList.remove('active');
-function fmtDate(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+// ── MARK READ ──
+window.markRead = async (id, el) => {
+  if (!el.classList.contains('unread')) return;
+  el.classList.remove('unread');
+  el.querySelector('.unread-dot')?.remove();
+  try { await updateDoc(doc(db,'notifications',id), {read:true}); } catch(e){}
+};
+
+window.markAllRead = async () => {
+  const batch = writeBatch(db);
+  allNotifs.filter(n=>!n.read).forEach(n => batch.update(doc(db,'notifications',n._id),{read:true}));
+  await batch.commit();
+  toast('✅ Tout marqué comme lu', 'ok');
+};
+
+// ── EMAIL ──
+async function handleNewNotif(notif) {
+  if (!settings.ejsService || !settings.ejsTemplate || !settings.ejsPubkey || !settings.ejsTo) return;
+  if (settings.freq === 'immediate') {
+    await sendEmail([notif]);
+  } else if (settings.freq === 'hourly') {
+    pendingSummary.push(notif);
+    if (!summaryTimer) summaryTimer = setTimeout(async () => { await sendEmail(pendingSummary); pendingSummary=[]; summaryTimer=null; }, 3600000);
+  }
+  // daily : non implémenté côté client (nécessiterait un backend)
+}
+
+async function sendEmail(notifs) {
+  if (!settings.ejsService || !settings.ejsPubkey || !settings.ejsTemplate || !settings.ejsTo) return;
+  try {
+    emailjs.init(settings.ejsPubkey);
+    const lines = notifs.map(n => {
+      const label = n.entityType==='client' ? 'Client '+n.entityId.replace('CLIENT_','').replace(/_/g,' ') : 'Commande N° '+n.entityId;
+      return `• ${label} — ${n.operator||'Anonyme'} — ${new Date(n.createdAt).toLocaleString('fr-FR')}`;
+    }).join('\n');
+    await emailjs.send(settings.ejsService, settings.ejsTemplate, {
+      to_email: settings.ejsTo,
+      subject: `[Qualité Stema] ${notifs.length} nouvelle${notifs.length>1?'s':''} photo${notifs.length>1?'s':''}`,
+      message: lines
+    });
+    // Historique
+    const entry = { date: new Date().toLocaleString('fr-FR'), count: notifs.length };
+    notifHistory.unshift(entry);
+    if (notifHistory.length > 20) notifHistory = notifHistory.slice(0,20);
+    localStorage.setItem('stema_notif_history', JSON.stringify(notifHistory));
+    renderHistory();
+  } catch(e) { console.error('EmailJS:', e); }
+}
+
+window.sendTestEmail = async () => {
+  if (!settings.ejsService || !settings.ejsPubkey || !settings.ejsTemplate || !settings.ejsTo) {
+    toast('⚠️ Remplissez et sauvegardez la config EmailJS d\'abord', 'err'); return;
+  }
+  try {
+    emailjs.init(settings.ejsPubkey);
+    await emailjs.send(settings.ejsService, settings.ejsTemplate, {
+      to_email: settings.ejsTo,
+      subject: '[Qualité Stema] Email test',
+      message: '✅ La configuration fonctionne correctement !\n\nApplication Qualité Stema'
+    });
+    toast('📧 Email test envoyé à ' + settings.ejsTo, 'ok');
+  } catch(e) { console.error(e); toast('❌ Erreur : ' + e.text, 'err'); }
+};
+
+function renderHistory() {
+  const el = document.getElementById('notif-history');
+  if (!notifHistory.length) { el.innerHTML = '<div class="hist-empty">Aucune notification envoyée</div>'; return; }
+  el.innerHTML = notifHistory.map(h => `<div class="notif-hist-item"><span>${h.date}</span><span style="color:#0f3460;font-weight:700">${h.count} photo${h.count>1?'s':''}</span></div>`).join('');
+}
+
+// ── GALERIE ──
+window.loadGallery = async () => {
+  const from = document.getElementById('gal-from').value;
+  const to = document.getElementById('gal-to').value;
+  const grid = document.getElementById('gallery-grid');
+  grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Chargement...</div>';
+  try {
+    let q;
+    if (from && to) q = query(collection(db,'photos'), where('createdAt','>=',new Date(from).toISOString()), where('createdAt','<=',new Date(to+'T23:59:59').toISOString()), orderBy('createdAt','desc'));
+    else q = query(collection(db,'photos'), orderBy('createdAt','desc'), limit(100));
+    const snap = await getDocs(q);
+    const photos = snap.docs.map(d=>d.data());
+    document.getElementById('gal-count').textContent = `${photos.length} photo${photos.length>1?'s':''}`;
+    if (!photos.length) { grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Aucune photo sur cette période</div>'; return; }
+    grid.innerHTML = photos.map(p => {
+      const isClient = p.type==='client';
+      const label = isClient ? '👤 '+(p.clientName||p.commandeId) : '📋 '+p.commandeId;
+      return `<div class="gallery-card">
+        <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+        <div class="gallery-card-body">
+          <div class="gallery-card-cmd">${label}</div>
+          ${p.operator?`<div class="gallery-card-op">👷 ${p.operator}</div>`:''}
+          <div class="gallery-card-date">${new Date(p.createdAt).toLocaleDateString('fr-FR')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Erreur chargement</div>'; }
+};
+
+// ── UTILITAIRES ──
+function timeAgo(iso) {
+  const diff = Date.now()-new Date(iso).getTime();
+  const m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);
+  if(m<1)return'à l\'instant';if(m<60)return`il y a ${m}min`;if(h<24)return`il y a ${h}h`;return`il y a ${d}j`;
+}
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(type||'');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+init();
 </script>
 </body>
 </html>
