@@ -234,7 +234,7 @@
     </button>
     <div class="scan-card">
       <div class="scan-label">Numéro de commande</div>
-      <input type="text" id="commande-input" placeholder="Ex: 50235" autocomplete="off" autocorrect="off" autocapitalize="characters" onkeydown="if(event.key==='Enter') goCommande()">
+      <input type="text" id="commande-input" placeholder="N° de commande" autocomplete="off" autocorrect="off" autocapitalize="characters" inputmode="numeric" pattern="[0-9]*" onkeydown="if(event.key==='Enter') goCommande()">
       <button class="btn-go" onclick="goCommande()">Valider</button>
     </div>
   </div>
