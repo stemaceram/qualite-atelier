@@ -5,273 +5,333 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Qualité Stema</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
 
     /* HEADER */
-    .header{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
-    .header-left{display:flex;align-items:center;gap:14px}
-    .header-logo{background:#fff;border-radius:10px;padding:5px 10px;font-size:13px;font-weight:800;color:#0f3460}
-    .header-title{color:#fff;font-size:18px;font-weight:800}
-    .header-sub{color:rgba(255,255,255,0.45);font-size:12px}
-    .live-badge{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.6);font-size:12px}
-    .live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+    .header{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .header-logo{background:#fff;border-radius:9px;padding:5px 10px;font-size:12px;font-weight:800;color:#0f3460}
+    .header-title{color:#fff;font-size:17px;font-weight:800}
+    .live-badge{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.55);font-size:12px}
+    .live-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
     /* LAYOUT */
-    .layout{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 60px)}
+    .layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 50px)}
 
     /* SIDEBAR */
-    .sidebar{background:#fff;border-right:1px solid #e8e8e8;padding:20px;overflow-y:auto}
-    .sidebar-section{margin-bottom:24px}
-    .sidebar-section-title{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+    .sidebar{background:#fff;border-right:1px solid #e8e8e8;padding:18px;overflow-y:auto;height:calc(100vh - 50px);position:sticky;top:50px}
+    .section-title{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;margin-top:20px}
+    .section-title:first-child{margin-top:0}
 
     /* STATS */
-    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
-    .stat-card{background:#f8f9ff;border-radius:14px;padding:14px;text-align:center}
-    .stat-value{font-size:28px;font-weight:800;color:#0f3460}
-    .stat-label{font-size:11px;color:#888;margin-top:2px}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+    .stat-card{background:#f0f4ff;border-radius:12px;padding:12px;text-align:center}
+    .stat-value{font-size:24px;font-weight:800;color:#0f3460}
+    .stat-label{font-size:10px;color:#888;margin-top:2px}
 
-    /* NOTIF SETTINGS */
-    .setting-row{margin-bottom:14px}
-    .setting-label{font-size:12px;font-weight:700;color:#555;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
-    .setting-input{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e;background:#fff}
+    /* SETTINGS */
+    .setting-row{margin-bottom:12px}
+    .setting-label{font-size:11px;font-weight:700;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
+    .setting-input{width:100%;padding:9px 11px;border:1.5px solid #e8e8e8;border-radius:9px;font-size:13px;outline:none;color:#1a1a2e}
     .setting-input:focus{border-color:#0f3460}
     .setting-input::placeholder{color:#ccc}
+    .setting-select{width:100%;padding:9px 11px;border:1.5px solid #e8e8e8;border-radius:9px;font-size:13px;outline:none;color:#1a1a2e;background:#fff}
 
     /* TOGGLE */
-    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f2f5}
-    .toggle-label{font-size:14px;font-weight:600;color:#1a1a2e}
-    .toggle-desc{font-size:11px;color:#aaa;margin-top:2px}
-    .toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5}
+    .toggle-info{flex:1}
+    .toggle-name{font-size:13px;font-weight:600}
+    .toggle-desc{font-size:11px;color:#aaa;margin-top:1px}
+    .toggle{position:relative;width:40px;height:22px;flex-shrink:0;margin-left:10px}
     .toggle input{opacity:0;width:0;height:0}
-    .toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:24px;transition:0.2s;cursor:pointer}
-    .toggle-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s}
+    .toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:22px;transition:.2s;cursor:pointer}
+    .toggle-slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
     .toggle input:checked+.toggle-slider{background:#0f3460}
-    .toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
-
-    /* SELECT */
-    .setting-select{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e;background:#fff}
+    .toggle input:checked+.toggle-slider:before{transform:translateX(18px)}
 
     /* BUTTONS */
-    .btn{width:100%;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
+    .btn{width:100%;padding:11px;border:none;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
     .btn-primary{background:#0f3460;color:#fff}
-    .btn-primary:hover{background:#16213e}
     .btn-success{background:#22c55e;color:#fff}
-    .btn-success:hover{background:#16a34a}
     .btn-danger{background:#ef4444;color:#fff}
-    .btn-sm{padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+    .btn-ghost{background:#f0f2f5;color:#555}
+    .btn-sm{padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px}
 
-    /* HISTORIQUE */
-    .notif-history{max-height:180px;overflow-y:auto}
-    .notif-hist-item{font-size:11px;color:#666;padding:6px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between}
-    .notif-hist-item:last-child{border-bottom:none}
-    .hist-empty{font-size:12px;color:#ccc;text-align:center;padding:12px 0}
-
-    /* MAIN */
-    .main{padding:24px;overflow-y:auto}
-    .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-    .main-title{font-size:20px;font-weight:800}
-    .main-actions{display:flex;gap:8px}
-
-    /* TABS */
-    .tabs{display:flex;gap:4px;background:#e8eef7;border-radius:12px;padding:4px;width:fit-content;margin-bottom:20px}
-    .tab{padding:8px 18px;border-radius:8px;border:none;background:transparent;font-size:13px;font-weight:600;color:#888;cursor:pointer;transition:all 0.15s}
-    .tab.active{background:#fff;color:#0f3460;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-
-    /* FEED */
-    .feed-wrap{background:#fff;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden}
-    .feed-empty{padding:48px;text-align:center;color:#bbb;font-size:14px}
-    .feed-empty-icon{font-size:40px;margin-bottom:10px}
-
-    /* NOTIF ITEM */
-    .notif-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid #f8f8f8;cursor:pointer;transition:background 0.1s}
-    .notif-item:hover{background:#fafbff}
-    .notif-item.unread{background:#f0f4ff}
-    .notif-thumb{width:54px;height:54px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#f0f2f5}
-    .notif-thumb-ph{width:54px;height:54px;border-radius:10px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-    .notif-body{flex:1;min-width:0}
-    .notif-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-    .notif-title{font-size:13px;font-weight:700}
-    .notif-time{font-size:11px;color:#bbb;white-space:nowrap;flex-shrink:0}
-    .notif-desc{font-size:12px;color:#666;margin-top:2px}
-    .unread-dot{width:8px;height:8px;background:#0f3460;border-radius:50%;flex-shrink:0;margin-top:4px}
-
-    /* GALLERY */
-    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-    .gallery-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-    .gallery-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:pointer}
-    .gallery-card-body{padding:8px 10px}
-    .gallery-card-cmd{font-size:12px;font-weight:700;color:#0f3460}
-    .gallery-card-op{font-size:11px;color:#aaa}
-    .gallery-card-date{font-size:10px;color:#ccc}
-
-    /* DATE FILTER */
-    .filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-    .filter-input{padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e}
-    .filter-input:focus{border-color:#0f3460}
+    /* NAV TABS */
+    .nav-tabs{display:flex;gap:2px;padding:16px 24px 0;background:#fff;border-bottom:1px solid #e8e8e8}
+    .nav-tab{padding:10px 18px;border:none;background:none;font-size:13px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:6px}
+    .nav-tab.active{color:#0f3460;border-bottom-color:#0f3460}
+    .nav-tab:hover:not(.active){color:#555}
 
     /* BADGE */
-    .badge{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:6px}
+    .badge{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:20px}
+
+    /* MAIN */
+    .main{overflow-y:auto}
+    .tab-content{display:none;padding:20px 24px}
+    .tab-content.active{display:block}
+
+    /* FEED */
+    .feed-card{background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:16px}
+    .feed-card-header{padding:14px 18px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center}
+    .feed-card-title{font-size:14px;font-weight:700}
+    .notif-item{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid #f8f8f8;cursor:pointer;transition:background .1s;align-items:flex-start}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item:hover{background:#fafbff}
+    .notif-item.unread{background:#f0f4ff}
+    .notif-thumb{width:50px;height:50px;border-radius:9px;object-fit:cover;flex-shrink:0}
+    .notif-thumb-ph{width:50px;height:50px;border-radius:9px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .notif-body{flex:1;min-width:0}
+    .notif-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .notif-title-text{font-size:13px;font-weight:700}
+    .notif-time{font-size:11px;color:#bbb;white-space:nowrap}
+    .notif-desc{font-size:12px;color:#666;margin-top:2px}
+    .unread-dot{width:7px;height:7px;background:#0f3460;border-radius:50%;flex-shrink:0;margin-top:5px}
+    .feed-empty{padding:40px;text-align:center;color:#bbb;font-size:14px}
+
+    /* DOSSIERS */
+    .folder-block{background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:16px;overflow:hidden}
+    .folder-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:background .1s}
+    .folder-header:hover{background:#fafafa}
+    .folder-header-left{display:flex;align-items:center;gap:10px}
+    .folder-icon{font-size:18px}
+    .folder-name{font-size:15px;font-weight:700;color:#1a1a2e}
+    .folder-meta{font-size:11px;color:#aaa;margin-top:2px}
+    .folder-header-right{display:flex;align-items:center;gap:10px}
+    .folder-count{font-size:12px;font-weight:700;color:#0f3460;background:#e8eef7;padding:3px 10px;border-radius:20px}
+    .folder-chevron{color:#aaa;font-size:14px;transition:transform .2s}
+    .folder-chevron.open{transform:rotate(90deg)}
+    .folder-photos{display:none;padding:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+    .folder-photos.open{display:grid}
+    .photo-card{background:#f8f9ff;border-radius:12px;overflow:hidden;position:relative}
+    .photo-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;cursor:pointer}
+    .photo-card-body{padding:6px 8px}
+    .photo-card-op{font-size:10px;color:#0f3460;font-weight:700}
+    .photo-card-comment{font-size:10px;color:#666;font-style:italic;margin-top:2px}
+    .photo-card-date{font-size:10px;color:#bbb}
+    .photo-delete-btn{position:absolute;top:5px;right:5px;width:24px;height:24px;background:rgba(0,0,0,0.5);border:none;border-radius:50%;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .photo-delete-btn:hover{background:rgba(239,68,68,0.85)}
+    .folder-actions{padding:10px 14px;border-top:1px solid #f5f5f5;display:flex;gap:8px}
+
+    /* ARCHIVE */
+    .archive-filters{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:16px}
+    .filter-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+    .filter-label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+    .filter-date{padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:13px;outline:none;color:#1a1a2e;flex:1}
+    .filter-date:focus{border-color:#0f3460}
+    .filter-actions{display:flex;gap:8px}
+    .btn-filter{flex:1;padding:11px;background:#0f3460;color:#fff;border:none;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer}
+    .btn-export{flex:1;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+    .btn-export:disabled{background:#ccc;cursor:not-allowed}
+    .btn-del-exported{width:100%;padding:11px;background:#fff;color:#ef4444;border:1.5px solid #ef4444;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;display:none}
+    .arch-list-item{background:#fff;border-radius:14px;padding:13px 16px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+    .arch-list-item:hover{background:#fafafa}
+    .arch-list-left{display:flex;flex-direction:column;gap:2px}
+    .arch-list-num{font-size:14px;font-weight:700}
+    .arch-list-meta{font-size:11px;color:#aaa}
+    .arch-list-exported{font-size:10px;color:#22c55e;font-weight:700}
+    .arch-list-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+    .arch-count{font-size:12px;font-weight:700;color:#0f3460;background:#e8eef7;padding:3px 10px;border-radius:20px}
+    .arch-size{font-size:10px;color:#bbb}
+    .arch-empty{text-align:center;color:#bbb;font-size:14px;padding:40px}
+
+    /* MODALE */
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+    .modal-overlay.active{display:flex}
+    .modal-box{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+    .modal-icon{font-size:40px;margin-bottom:12px}
+    .modal-title{font-size:17px;font-weight:700;margin-bottom:6px}
+    .modal-desc{font-size:13px;color:#888;margin-bottom:22px;line-height:1.5}
+    .modal-actions{display:flex;gap:10px}
+    .modal-cancel{flex:1;padding:13px;background:#f0f2f5;border:none;border-radius:12px;font-size:14px;font-weight:600;color:#555;cursor:pointer}
+    .modal-confirm{flex:1;padding:13px;background:#ef4444;border:none;border-radius:12px;font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+
+    /* LOADER */
+    .loading-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(15,52,96,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:14px}
+    .loading-overlay.active{display:flex}
+    .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+    .loading-text{color:#fff;font-size:14px;font-weight:600}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
     /* TOAST */
-    .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;transform:translateY(80px);transition:transform 0.25s;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+    .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;transform:translateY(80px);transition:transform .25s;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2)}
     .toast.show{transform:translateY(0)}
     .toast.ok{background:#22c55e}
     .toast.err{background:#ef4444}
 
-    /* MARK ALL */
-    .feed-header{padding:14px 20px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center}
-    .feed-header-title{font-size:14px;font-weight:700}
-
-    @media(max-width:800px){
-      .layout{grid-template-columns:1fr}
-      .sidebar{border-right:none;border-bottom:1px solid #e8e8e8}
-    }
+    /* HISTORIQUE */
+    .hist-item{font-size:11px;color:#666;padding:6px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between}
+    .hist-item:last-child{border-bottom:none}
+    .hist-empty{font-size:12px;color:#ccc;text-align:center;padding:10px 0}
   </style>
 </head>
 <body>
 
+<div class="loading-overlay" id="loader"><div class="spinner"></div><div class="loading-text" id="loader-text">Chargement...</div></div>
 <div class="toast" id="toast"></div>
+
+<!-- MODALE SUPPRESSION -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Supprimer cette photo ?</div>
+    <div class="modal-desc">Voulez-vous vraiment supprimer cette photo ? Cette action est irréversible et libérera de l'espace de stockage.</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button class="modal-confirm" id="btn-confirm-delete">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE SUPPRESSION DOSSIER -->
+<div class="modal-overlay" id="delete-folder-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗂️</div>
+    <div class="modal-title">Supprimer ce dossier ?</div>
+    <div class="modal-desc" id="delete-folder-desc">Voulez-vous vraiment supprimer toutes les photos de ce dossier ?</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('delete-folder-modal').classList.remove('active')">Annuler</button>
+      <button class="modal-confirm" id="btn-confirm-delete-folder">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE SUPPRESSION EXPORTÉS -->
+<div class="modal-overlay" id="delete-exported-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗂️</div>
+    <div class="modal-title">Supprimer les dossiers exportés ?</div>
+    <div class="modal-desc" id="delete-exported-desc"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="document.getElementById('delete-exported-modal').classList.remove('active')">Annuler</button>
+      <button class="modal-confirm" id="btn-confirm-del-exported">Supprimer</button>
+    </div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-left">
     <div class="header-logo">STEMA</div>
-    <div>
-      <div class="header-title">Dashboard Qualité</div>
-      <div class="header-sub">Suivi des photos atelier</div>
-    </div>
+    <div class="header-title">Dashboard Qualité</div>
   </div>
-  <div class="live-badge">
-    <div class="live-dot"></div>
-    En direct
-  </div>
+  <div class="live-badge"><div class="live-dot"></div>En direct</div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs" style="background:#fff;border-bottom:1px solid #e8e8e8">
+  <button class="nav-tab active" onclick="showTab('feed',this)">🔔 Notifications <span class="badge" id="unread-badge" style="display:none">0</span></button>
+  <button class="nav-tab" onclick="showTab('dossiers',this)">📁 Dossiers</button>
+  <button class="nav-tab" onclick="showTab('archive',this)">🗄️ Archiver</button>
+  <button class="nav-tab" onclick="showTab('settings',this)">⚙️ Paramètres</button>
 </div>
 
 <div class="layout">
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-
-    <!-- STATS -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Statistiques</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="stat-today">—</div><div class="stat-label">Aujourd'hui</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-week">—</div><div class="stat-label">7 derniers jours</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-ops">—</div><div class="stat-label">Opérateurs</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total photos</div></div>
-      </div>
+    <div class="section-title">Statistiques</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value" id="stat-today">—</div><div class="stat-label">Aujourd'hui</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-week">—</div><div class="stat-label">7 derniers jours</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-ops">—</div><div class="stat-label">Opérateurs</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total photos</div></div>
     </div>
 
-    <!-- NOTIFICATIONS EMAIL -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Notifications email</div>
-
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">Activer</div>
-          <div class="toggle-desc">Recevoir des emails lors d'ajouts de photos</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="notif-enabled"><span class="toggle-slider"></span></label>
-      </div>
-
-      <div class="toggle-row" style="margin-bottom:14px">
-        <div>
-          <div class="toggle-label">Fréquence</div>
-        </div>
-        <select class="setting-select" id="notif-freq" style="width:auto">
-          <option value="immediate">Immédiat</option>
-          <option value="hourly">Résumé horaire</option>
-          <option value="daily">Résumé journalier</option>
-        </select>
-      </div>
-
-      <button class="btn btn-primary" onclick="saveNotifSettings()">💾 Sauvegarder</button>
+    <div class="section-title">Notifications email</div>
+    <div class="toggle-row">
+      <div class="toggle-info"><div class="toggle-name">Activer</div><div class="toggle-desc">Email à chaque ajout de photo</div></div>
+      <label class="toggle"><input type="checkbox" id="notif-enabled"><span class="toggle-slider"></span></label>
     </div>
-
-    <!-- CONFIG EMAILJS -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Configuration EmailJS</div>
-      <div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.5">
-        Le template doit avoir les variables :
-        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">to_email</code>
-        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">subject</code>
-        <code style="background:#f0f2f5;padding:2px 5px;border-radius:4px">message</code>
-      </div>
-
-      <div class="setting-row">
-        <div class="setting-label">Service ID</div>
-        <input class="setting-input" id="ejs-service" placeholder="service_xxxxxxx">
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">Template ID</div>
-        <input class="setting-input" id="ejs-template" placeholder="template_xxxxxxx">
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">Public Key</div>
-        <input class="setting-input" id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxx">
-      </div>
-      <div class="setting-row">
-        <div class="setting-label">Email destinataire</div>
-        <input class="setting-input" type="email" id="ejs-to" placeholder="contact@stema-ceram.com">
-      </div>
-
-      <button class="btn btn-primary" onclick="saveEmailConfig()">💾 Sauvegarder config</button>
-      <button class="btn btn-success" onclick="sendTestEmail()">📧 Email test</button>
+    <div class="setting-row" style="margin-top:10px">
+      <div class="setting-label">Fréquence</div>
+      <select class="setting-select" id="notif-freq">
+        <option value="immediate">Immédiat</option>
+        <option value="hourly">Résumé horaire</option>
+      </select>
     </div>
+    <button class="btn btn-primary" onclick="saveNotifSettings()">💾 Sauvegarder</button>
 
-    <!-- HISTORIQUE NOTIFICATIONS -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Historique notifications</div>
-      <div class="notif-history" id="notif-history">
-        <div class="hist-empty">Aucune notification envoyée</div>
-      </div>
-    </div>
+    <div class="section-title">Historique emails</div>
+    <div id="notif-history"><div class="hist-empty">Aucun email envoyé</div></div>
+  </div>
 
-  </div><!-- /sidebar -->
-
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <div class="main">
 
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('feed', this)">🔔 Flux photos <span class="badge" id="unread-badge" style="display:none">0</span></button>
-      <button class="tab" onclick="showTab('gallery', this)">🖼️ Galerie</button>
-    </div>
-
-    <!-- TAB FEED -->
-    <div id="tab-feed">
-      <div class="feed-wrap">
-        <div class="feed-header">
-          <div class="feed-header-title">Activité en temps réel</div>
-          <button class="btn-sm" style="background:#f0f2f5;color:#555" onclick="markAllRead()">Tout marquer lu</button>
+    <!-- FEED -->
+    <div class="tab-content active" id="tab-feed">
+      <div class="feed-card">
+        <div class="feed-card-header">
+          <div class="feed-card-title">Activité en temps réel</div>
+          <button class="btn-sm btn-ghost" onclick="markAllRead()">Tout marquer lu</button>
         </div>
-        <div id="feed-list"><div class="feed-empty"><div class="feed-empty-icon">📷</div>Chargement...</div></div>
+        <div id="feed-list"><div class="feed-empty">Chargement...</div></div>
       </div>
     </div>
 
-    <!-- TAB GALLERY -->
-    <div id="tab-gallery" style="display:none">
-      <div class="filter-bar">
-        <input type="date" class="filter-input" id="gal-from">
-        <span style="color:#aaa;font-size:13px">→</span>
-        <input type="date" class="filter-input" id="gal-to">
-        <button class="btn-sm btn-primary" style="background:#0f3460;color:#fff" onclick="loadGallery()">Filtrer</button>
-        <span id="gal-count" style="font-size:12px;color:#888"></span>
+    <!-- DOSSIERS -->
+    <div class="tab-content" id="tab-dossiers">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:700">Tous les dossiers</div>
+        <button class="btn-sm btn-primary" onclick="loadDossiers()" style="background:#0f3460;color:#fff">↻ Rafraîchir</button>
       </div>
-      <div class="gallery-grid" id="gallery-grid">
-        <div class="feed-empty" style="grid-column:1/-1">Sélectionnez une période</div>
+      <div id="dossiers-list"><div class="feed-empty">Chargement...</div></div>
+    </div>
+
+    <!-- ARCHIVE -->
+    <div class="tab-content" id="tab-archive">
+      <div class="archive-filters">
+        <div class="filter-row">
+          <span class="filter-label">Du</span>
+          <input type="date" class="filter-date" id="filter-from">
+          <span class="filter-label">Au</span>
+          <input type="date" class="filter-date" id="filter-to">
+        </div>
+        <div class="filter-actions">
+          <button class="btn-filter" onclick="applyArchiveFilter()">🔍 Filtrer</button>
+          <button class="btn-export" id="btn-export" onclick="exportZip()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter ZIP
+          </button>
+        </div>
+        <button class="btn-del-exported" id="btn-del-exported" onclick="confirmDeleteExported()">🗑️ Supprimer les dossiers exportés</button>
+      </div>
+      <div id="arch-subtitle" style="font-size:12px;color:#aaa;margin-bottom:12px"></div>
+      <div id="arch-list"><div class="arch-empty">Appliquez un filtre pour afficher les dossiers</div></div>
+    </div>
+
+    <!-- PARAMÈTRES -->
+    <div class="tab-content" id="tab-settings">
+      <div style="max-width:500px">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px">Configuration EmailJS</div>
+        <div style="font-size:12px;color:#aaa;background:#f8f9ff;border-radius:12px;padding:12px;margin-bottom:16px;line-height:1.6">
+          Variables requises dans le template :
+          <code style="background:#e8eef7;padding:2px 6px;border-radius:4px;font-size:11px">to_email</code>
+          <code style="background:#e8eef7;padding:2px 6px;border-radius:4px;font-size:11px">subject</code>
+          <code style="background:#e8eef7;padding:2px 6px;border-radius:4px;font-size:11px">message</code>
+        </div>
+        <div class="setting-row"><div class="setting-label">Service ID</div><input class="setting-input" id="ejs-service" placeholder="service_xxxxxxx"></div>
+        <div class="setting-row"><div class="setting-label">Template ID</div><input class="setting-input" id="ejs-template" placeholder="template_xxxxxxx"></div>
+        <div class="setting-row"><div class="setting-label">Public Key</div><input class="setting-input" id="ejs-pubkey" placeholder="xxxxxxxxxxxxxxx"></div>
+        <div class="setting-row"><div class="setting-label">Email destinataire</div><input class="setting-input" type="email" id="ejs-to" placeholder="contact@stema-ceram.com"></div>
+        <button class="btn btn-primary" onclick="saveEmailConfig()">💾 Sauvegarder la config</button>
+        <button class="btn btn-success" onclick="sendTestEmail()">📧 Envoyer un email test</button>
       </div>
     </div>
 
-  </div><!-- /main -->
-</div><!-- /layout -->
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, query, orderBy, getDocs, updateDoc, doc, onSnapshot, where, limit, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, query, orderBy, getDocs, updateDoc, deleteDoc, doc, onSnapshot, where, limit, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPI4-NYR0-Wn0UxQ3Z8W4WH7emy_58z44",
@@ -283,239 +343,354 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-let allNotifs = [];
-let settings = {};
-let notifHistory = [];
-let pendingSummary = [];
-let summaryTimer = null;
+let allNotifs = [], settings = {}, notifHistory = [];
+let pendingDeletePhoto = null;
+let pendingDeleteFolder = null;
+let exportedCommandes = {}, archivePhotosByCommande = {};
 
 // ── INIT ──
 function init() {
   loadSettings();
   loadStats();
   startLiveListener();
-  // Dates galerie par défaut
   const now = new Date(), from = new Date();
-  from.setDate(from.getDate() - 7);
-  document.getElementById('gal-to').value = now.toISOString().split('T')[0];
-  document.getElementById('gal-from').value = from.toISOString().split('T')[0];
+  from.setDate(from.getDate() - 30);
+  document.getElementById('filter-to').value = now.toISOString().split('T')[0];
+  document.getElementById('filter-from').value = from.toISOString().split('T')[0];
 }
 
 // ── TABS ──
 window.showTab = (id, btn) => {
-  document.getElementById('tab-feed').style.display = id === 'feed' ? 'block' : 'none';
-  document.getElementById('tab-gallery').style.display = id === 'gallery' ? 'block' : 'none';
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'gallery') loadGallery();
+  if (id === 'dossiers') loadDossiers();
 };
 
 // ── SETTINGS ──
 function loadSettings() {
-  const saved = localStorage.getItem('stema_dash_v2');
-  settings = saved ? JSON.parse(saved) : {
-    notifEnabled: false, freq: 'immediate',
-    ejsService: '', ejsTemplate: '', ejsPubkey: '', ejsTo: ''
-  };
-  document.getElementById('notif-enabled').checked = settings.notifEnabled || false;
-  document.getElementById('notif-freq').value = settings.freq || 'immediate';
-  document.getElementById('ejs-service').value = settings.ejsService || '';
-  document.getElementById('ejs-template').value = settings.ejsTemplate || '';
-  document.getElementById('ejs-pubkey').value = settings.ejsPubkey || '';
-  document.getElementById('ejs-to').value = settings.ejsTo || '';
-  // Historique
-  const hist = localStorage.getItem('stema_notif_history');
+  const s = localStorage.getItem('stema_dash_v3');
+  settings = s ? JSON.parse(s) : { notifEnabled:false, freq:'immediate', ejsService:'', ejsTemplate:'', ejsPubkey:'', ejsTo:'' };
+  document.getElementById('notif-enabled').checked = settings.notifEnabled||false;
+  document.getElementById('notif-freq').value = settings.freq||'immediate';
+  document.getElementById('ejs-service').value = settings.ejsService||'';
+  document.getElementById('ejs-template').value = settings.ejsTemplate||'';
+  document.getElementById('ejs-pubkey').value = settings.ejsPubkey||'';
+  document.getElementById('ejs-to').value = settings.ejsTo||'';
+  const hist = localStorage.getItem('stema_notif_hist');
   if (hist) { notifHistory = JSON.parse(hist); renderHistory(); }
 }
-
 window.saveNotifSettings = () => {
   settings.notifEnabled = document.getElementById('notif-enabled').checked;
   settings.freq = document.getElementById('notif-freq').value;
-  localStorage.setItem('stema_dash_v2', JSON.stringify(settings));
-  toast('✅ Paramètres sauvegardés', 'ok');
+  localStorage.setItem('stema_dash_v3', JSON.stringify(settings));
+  toast('✅ Paramètres sauvegardés','ok');
 };
-
 window.saveEmailConfig = () => {
   settings.ejsService = document.getElementById('ejs-service').value.trim();
   settings.ejsTemplate = document.getElementById('ejs-template').value.trim();
   settings.ejsPubkey = document.getElementById('ejs-pubkey').value.trim();
   settings.ejsTo = document.getElementById('ejs-to').value.trim();
-  localStorage.setItem('stema_dash_v2', JSON.stringify(settings));
-  toast('✅ Config EmailJS sauvegardée', 'ok');
+  localStorage.setItem('stema_dash_v3', JSON.stringify(settings));
+  toast('✅ Config EmailJS sauvegardée','ok');
 };
 
 // ── STATS ──
 async function loadStats() {
   try {
-    const snap = await getDocs(collection(db, 'photos'));
-    const photos = snap.docs.map(d => d.data());
+    const snap = await getDocs(collection(db,'photos'));
+    const photos = snap.docs.map(d=>d.data());
     const today = new Date(); today.setHours(0,0,0,0);
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7); weekAgo.setHours(0,0,0,0);
-    document.getElementById('stat-today').textContent = photos.filter(p => new Date(p.createdAt) >= today).length;
-    document.getElementById('stat-week').textContent = photos.filter(p => new Date(p.createdAt) >= weekAgo).length;
+    document.getElementById('stat-today').textContent = photos.filter(p=>new Date(p.createdAt)>=today).length;
+    document.getElementById('stat-week').textContent = photos.filter(p=>new Date(p.createdAt)>=weekAgo).length;
     document.getElementById('stat-total').textContent = photos.length;
-    const ops = new Set(photos.map(p => p.operator).filter(Boolean));
-    document.getElementById('stat-ops').textContent = ops.size || '—';
-  } catch(e) { console.error(e); }
+    const ops = new Set(photos.map(p=>p.operator).filter(Boolean));
+    document.getElementById('stat-ops').textContent = ops.size||'—';
+  } catch(e){console.error(e);}
 }
 
 // ── LIVE LISTENER ──
 function startLiveListener() {
-  const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(100));
+  const q = query(collection(db,'notifications'), orderBy('createdAt','desc'), limit(100));
   onSnapshot(q, snap => {
-    allNotifs = snap.docs.map(d => ({...d.data(), _id: d.id}));
-    const unread = allNotifs.filter(n => !n.read).length;
+    allNotifs = snap.docs.map(d=>({...d.data(),_id:d.id}));
+    const unread = allNotifs.filter(n=>!n.read).length;
     const badge = document.getElementById('unread-badge');
-    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline'; }
-    else badge.style.display = 'none';
+    if(unread>0){badge.textContent=unread;badge.style.display='inline';}else badge.style.display='none';
     renderFeed();
-    // Nouvelles notifs → email si activé
-    snap.docChanges().filter(c => c.type === 'added').forEach(c => {
-      const notif = c.doc.data();
-      if (settings.notifEnabled) handleNewNotif(notif);
-    });
+    snap.docChanges().filter(c=>c.type==='added').forEach(c=>{if(settings.notifEnabled) handleNewNotif(c.doc.data());});
     loadStats();
   });
 }
 
-// ── RENDER FEED ──
+// ── FEED ──
 function renderFeed() {
   const list = document.getElementById('feed-list');
-  if (!allNotifs.length) {
-    list.innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">📷</div>Aucune photo pour l\'instant</div>';
-    return;
-  }
-  list.innerHTML = allNotifs.map(n => {
-    const isClient = n.entityType === 'client';
-    const label = isClient ? '👤 ' + n.entityId.replace('CLIENT_','').replace(/_/g,' ') : '📋 N° ' + n.entityId;
-    const op = n.operator && n.operator !== 'Anonyme' ? `👷 ${n.operator}` : '';
-    return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n._id}', this)">
-      ${n.photoUrl
-        ? `<img class="notif-thumb" src="${n.photoUrl}" loading="lazy" alt="">`
-        : `<div class="notif-thumb-ph">📷</div>`}
+  if(!allNotifs.length){list.innerHTML='<div class="feed-empty">Aucune photo pour l\'instant</div>';return;}
+  list.innerHTML = allNotifs.map(n=>{
+    const isClient = n.entityType==='client';
+    const label = isClient?'👤 '+n.entityId.replace('CLIENT_','').replace(/_/g,' '):'📋 N° '+n.entityId;
+    const op = n.operator&&n.operator!=='Anonyme'?` · 👷 ${n.operator}`:'';
+    return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n._id}',this)">
+      ${n.photoUrl?`<img class="notif-thumb" src="${n.photoUrl}" loading="lazy">`:'<div class="notif-thumb-ph">📷</div>'}
       <div class="notif-body">
-        <div class="notif-top">
-          <div class="notif-title">${label}</div>
-          <div class="notif-time">${timeAgo(n.createdAt)}</div>
-        </div>
-        <div class="notif-desc">Nouvelle photo${op ? ' · ' + op : ''}</div>
+        <div class="notif-top"><div class="notif-title-text">${label}</div><div class="notif-time">${timeAgo(n.createdAt)}</div></div>
+        <div class="notif-desc">Nouvelle photo${op}</div>
       </div>
-      ${!n.read ? '<div class="unread-dot"></div>' : ''}
+      ${!n.read?'<div class="unread-dot"></div>':''}
     </div>`;
   }).join('');
 }
-
-// ── MARK READ ──
-window.markRead = async (id, el) => {
-  if (!el.classList.contains('unread')) return;
-  el.classList.remove('unread');
-  el.querySelector('.unread-dot')?.remove();
-  try { await updateDoc(doc(db,'notifications',id), {read:true}); } catch(e){}
+window.markRead = async(id,el)=>{
+  if(!el.classList.contains('unread'))return;
+  el.classList.remove('unread');el.querySelector('.unread-dot')?.remove();
+  try{await updateDoc(doc(db,'notifications',id),{read:true});}catch(e){}
+};
+window.markAllRead = async()=>{
+  const batch=writeBatch(db);
+  allNotifs.filter(n=>!n.read).forEach(n=>batch.update(doc(db,'notifications',n._id),{read:true}));
+  await batch.commit();toast('✅ Tout marqué comme lu','ok');
 };
 
-window.markAllRead = async () => {
-  const batch = writeBatch(db);
-  allNotifs.filter(n=>!n.read).forEach(n => batch.update(doc(db,'notifications',n._id),{read:true}));
-  await batch.commit();
-  toast('✅ Tout marqué comme lu', 'ok');
+// ── DOSSIERS ──
+window.loadDossiers = async() => {
+  const list = document.getElementById('dossiers-list');
+  list.innerHTML = '<div class="feed-empty">Chargement...</div>';
+  try {
+    const q = query(collection(db,'photos'), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    const photos = snap.docs.map(d=>({...d.data(),_id:d.id}));
+    const byFolder = {};
+    photos.forEach(p=>{
+      if(!byFolder[p.commandeId]) byFolder[p.commandeId]=[];
+      byFolder[p.commandeId].push(p);
+    });
+    if(!Object.keys(byFolder).length){list.innerHTML='<div class="feed-empty">Aucun dossier</div>';return;}
+    list.innerHTML='';
+    Object.entries(byFolder).forEach(([folderId,fps])=>{
+      const isClient=folderId.startsWith('CLIENT_');
+      const label=isClient?(fps[0].clientName||folderId.replace('CLIENT_','').replace(/_/g,' ')):folderId;
+      const icon=isClient?'👤':'📋';
+      const minDate=new Date(Math.min(...fps.map(p=>new Date(p.createdAt))));
+      const block=document.createElement('div');block.className='folder-block';
+      const fid='folder-'+folderId.replace(/[^a-zA-Z0-9]/g,'_');
+      block.innerHTML=`
+        <div class="folder-header" onclick="toggleFolder('${fid}',this)">
+          <div class="folder-header-left">
+            <div class="folder-icon">${icon}</div>
+            <div><div class="folder-name">${isClient?'':' N° '}${label}</div><div class="folder-meta">Depuis le ${minDate.toLocaleDateString('fr-FR')}</div></div>
+          </div>
+          <div class="folder-header-right">
+            <div class="folder-count">${fps.length} photo${fps.length>1?'s':''}</div>
+            <div class="folder-chevron">›</div>
+          </div>
+        </div>
+        <div class="folder-photos" id="${fid}">
+          ${fps.map(p=>`
+            <div class="photo-card" id="pc-${p._id}">
+              <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
+              <button class="photo-delete-btn" onclick="askDeletePhoto('${p._id}','${p.url}','pc-${p._id}',event)">✕</button>
+              <div class="photo-card-body">
+                ${p.operator?`<div class="photo-card-op">👷 ${p.operator}</div>`:''}
+                ${p.comment?`<div class="photo-card-comment">💬 ${p.comment}</div>`:''}
+                <div class="photo-card-date">${new Date(p.createdAt).toLocaleDateString('fr-FR')}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="folder-actions" id="faction-${fid}" style="display:none">
+          <button class="btn-sm btn-ghost" onclick="askDeleteFolder('${folderId}',event)" style="background:#fff0f0;color:#ef4444;border:1px solid #fecaca">🗑️ Supprimer le dossier</button>
+        </div>`;
+      list.appendChild(block);
+    });
+  } catch(e){console.error(e);list.innerHTML='<div class="feed-empty">Erreur chargement</div>';}
 };
+
+window.toggleFolder=(id,header)=>{
+  const photos=document.getElementById(id);
+  const chevron=header.querySelector('.folder-chevron');
+  const actions=document.getElementById('faction-'+id);
+  const isOpen=photos.classList.contains('open');
+  photos.classList.toggle('open',!isOpen);
+  chevron.classList.toggle('open',!isOpen);
+  if(actions) actions.style.display=isOpen?'none':'flex';
+};
+
+// ── SUPPRESSION PHOTO ──
+window.askDeletePhoto=(docId,url,cardId,e)=>{
+  e.preventDefault();e.stopPropagation();
+  pendingDeletePhoto={docId,url,cardId};
+  document.getElementById('delete-modal').classList.add('active');
+};
+window.closeDeleteModal=()=>{document.getElementById('delete-modal').classList.remove('active');pendingDeletePhoto=null;};
+document.getElementById('btn-confirm-delete').addEventListener('click',async()=>{
+  if(!pendingDeletePhoto)return;
+  const{docId,url,cardId}=pendingDeletePhoto;
+  closeDeleteModal();loader('Suppression...');
+  try{
+    await deleteDoc(doc(db,'photos',docId));
+    try{const pe=new URL(url).pathname.split('/o/')[1]?.split('?')[0];if(pe)await deleteObject(ref(storage,decodeURIComponent(pe)));}catch(e){}
+    document.getElementById(cardId)?.remove();
+    toast('🗑️ Photo supprimée','ok');loadStats();
+  }catch(e){toast('Erreur suppression','err');}
+  finally{hideLoader();}
+});
+
+// ── SUPPRESSION DOSSIER ──
+window.askDeleteFolder=(folderId,e)=>{
+  e.stopPropagation();
+  pendingDeleteFolder=folderId;
+  document.getElementById('delete-folder-desc').textContent=`Voulez-vous vraiment supprimer toutes les photos du dossier "${folderId.startsWith('CLIENT_')?folderId.replace('CLIENT_','').replace(/_/g,' '):'N° '+folderId}" ? Cette action est irréversible.`;
+  document.getElementById('delete-folder-modal').classList.add('active');
+};
+document.getElementById('btn-confirm-delete-folder').addEventListener('click',async()=>{
+  document.getElementById('delete-folder-modal').classList.remove('active');
+  if(!pendingDeleteFolder)return;
+  loader('Suppression du dossier...');
+  try{
+    const q=query(collection(db,'photos'),where('commandeId','==',pendingDeleteFolder));
+    const snap=await getDocs(q);
+    let count=0;
+    for(const d of snap.docs){
+      const p=d.data();
+      try{await deleteDoc(doc(db,'photos',d.id));}catch(e){}
+      try{const pe=new URL(p.url).pathname.split('/o/')[1]?.split('?')[0];if(pe)await deleteObject(ref(storage,decodeURIComponent(pe)));}catch(e){}
+      count++;
+      document.getElementById('loader-text').textContent=`Suppression ${count}/${snap.docs.length}...`;
+    }
+    try{await deleteDoc(doc(db,'commandes',pendingDeleteFolder));}catch(e){}
+    toast('🗑️ Dossier supprimé','ok');loadStats();loadDossiers();
+  }catch(e){toast('Erreur suppression','err');}
+  finally{hideLoader();pendingDeleteFolder=null;}
+});
+
+// ── ARCHIVE ──
+window.applyArchiveFilter=async()=>{
+  loader('Chargement...');
+  try{
+    const fv=document.getElementById('filter-from').value,tv=document.getElementById('filter-to').value;
+    const fISO=fv?new Date(fv).toISOString():null,tISO=tv?new Date(tv+'T23:59:59').toISOString():null;
+    let q;
+    if(fISO&&tISO)q=query(collection(db,'photos'),where('createdAt','>=',fISO),where('createdAt','<=',tISO),orderBy('createdAt','desc'));
+    else q=query(collection(db,'photos'),orderBy('createdAt','desc'),limit(500));
+    const snap=await getDocs(q);
+    const photos=snap.docs.map(d=>({...d.data(),_id:d.id}));
+    archivePhotosByCommande={};
+    photos.forEach(p=>{if(!archivePhotosByCommande[p.commandeId])archivePhotosByCommande[p.commandeId]=[];archivePhotosByCommande[p.commandeId].push(p);});
+    const nbC=Object.keys(archivePhotosByCommande).length;
+    document.getElementById('arch-subtitle').textContent=`${photos.length} photo${photos.length>1?'s':''} · ${nbC} dossier${nbC>1?'s':''}`;
+    const list=document.getElementById('arch-list');list.innerHTML='';
+    if(!photos.length){list.innerHTML='<div class="arch-empty">Aucune photo sur cette période</div>';document.getElementById('btn-export').disabled=true;hideLoader();return;}
+    document.getElementById('btn-export').disabled=false;
+    Object.entries(archivePhotosByCommande).forEach(([id,ph])=>{
+      const totalSize=ph.reduce((s,p)=>s+(p.fileSize||0),0);
+      const minDate=new Date(Math.min(...ph.map(p=>new Date(p.createdAt))));
+      const isClient=id.startsWith('CLIENT_');
+      const label=isClient?(ph[0].clientName||id.replace('CLIENT_','').replace(/_/g,' ')):'N° '+id;
+      const icon=isClient?'👤':'📋';
+      const isExp=!!exportedCommandes[id];
+      const item=document.createElement('div');item.className='arch-list-item';item.id='arch-'+id;
+      item.innerHTML=`<div class="arch-list-left"><div class="arch-list-num">${icon} ${label}</div><div class="arch-list-meta">Depuis le ${minDate.toLocaleDateString('fr-FR')}</div>${isExp?'<div class="arch-list-exported">✓ Exporté</div>':''}</div><div class="arch-list-right"><div class="arch-count">${ph.length} photo${ph.length>1?'s':''}</div>${totalSize>0?`<div class="arch-size">${formatBytes(totalSize)}</div>`:''}</div>`;
+      list.appendChild(item);
+    });
+  }catch(e){console.error(e);toast('Erreur: '+e.message,'err');}
+  finally{hideLoader();}
+};
+
+window.exportZip=async()=>{
+  if(!Object.keys(archivePhotosByCommande).length)return;
+  const btn=document.getElementById('btn-export');btn.disabled=true;loader('Création du ZIP...');
+  try{
+    const zip=new JSZip();let count=0;
+    const total=Object.values(archivePhotosByCommande).flat().length;
+    exportedCommandes={};
+    for(const[id,photos]of Object.entries(archivePhotosByCommande)){
+      const isClient=id.startsWith('CLIENT_');
+      const folderName=(isClient?'Client_'+(photos[0].clientName||id):'Commande_'+id).replace(/[/\\:*?"<>|]/g,'_');
+      const folder=zip.folder(folderName);exportedCommandes[id]=photos;
+      for(const p of photos){
+        try{const resp=await fetch(p.url);const blob=await resp.blob();
+          const d=new Date(p.createdAt);
+          const name=`${d.toLocaleDateString('fr-FR').replace(/\//g,'-')}_${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}).replace(':','h')}${p.operator?'_'+p.operator.replace(/\s/g,''):''}.jpg`;
+          folder.file(name,blob);count++;
+          document.getElementById('loader-text').textContent=`Export ${count}/${total}...`;
+        }catch(e){console.warn(e);}
+      }
+    }
+    const csv=['Dossier,Date,Operateur,Commentaire,URL',...Object.values(archivePhotosByCommande).flat().map(p=>[p.commandeId,fmtDate(p.createdAt),p.operator||'',(p.comment||'').replace(/,/g,';'),p.url].join(','))].join('\n');
+    zip.file('index.csv',csv);
+    const from=document.getElementById('filter-from').value||'all',to=document.getElementById('filter-to').value||'all';
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+    saveAs(zipBlob,`stema-photos_${from}_${to}.zip`);
+    Object.keys(exportedCommandes).forEach(id=>{const item=document.getElementById('arch-'+id);if(item){const left=item.querySelector('.arch-list-left');if(!left.querySelector('.arch-list-exported')){const tag=document.createElement('div');tag.className='arch-list-exported';tag.textContent='✓ Exporté';left.appendChild(tag);}}});
+    document.getElementById('btn-del-exported').style.display='block';
+    toast('✅ ZIP téléchargé !','ok');
+  }catch(e){console.error(e);toast('Erreur export','err');}
+  finally{hideLoader();btn.disabled=false;}
+};
+
+window.confirmDeleteExported=()=>{
+  const nb=Object.keys(exportedCommandes).length,nbP=Object.values(exportedCommandes).flat().length;
+  document.getElementById('delete-exported-desc').textContent=`Voulez-vous vraiment supprimer ${nb} dossier${nb>1?'s':''} (${nbP} photo${nbP>1?'s':''}) ? Cette action est irréversible.`;
+  document.getElementById('delete-exported-modal').classList.add('active');
+};
+document.getElementById('btn-confirm-del-exported').addEventListener('click',async()=>{
+  document.getElementById('delete-exported-modal').classList.remove('active');
+  const allPhotos=Object.values(exportedCommandes).flat();
+  loader(`Suppression 0/${allPhotos.length}...`);let count=0;
+  try{
+    for(const p of allPhotos){
+      try{await deleteDoc(doc(db,'photos',p._id));}catch(e){}
+      try{const pe=new URL(p.url).pathname.split('/o/')[1]?.split('?')[0];if(pe)await deleteObject(ref(storage,decodeURIComponent(pe)));}catch(e){}
+      count++;document.getElementById('loader-text').textContent=`Suppression ${count}/${allPhotos.length}...`;
+    }
+    for(const id of Object.keys(exportedCommandes)){try{await deleteDoc(doc(db,'commandes',id));}catch(e){}document.getElementById('arch-'+id)?.remove();}
+    exportedCommandes={};document.getElementById('btn-del-exported').style.display='none';
+    document.getElementById('btn-export').disabled=true;
+    toast('🗑️ Dossiers supprimés','ok');loadStats();await applyArchiveFilter();
+  }catch(e){toast('Erreur','err');}
+  finally{hideLoader();}
+});
 
 // ── EMAIL ──
 async function handleNewNotif(notif) {
-  if (!settings.ejsService || !settings.ejsTemplate || !settings.ejsPubkey || !settings.ejsTo) return;
-  if (settings.freq === 'immediate') {
-    await sendEmail([notif]);
-  } else if (settings.freq === 'hourly') {
-    pendingSummary.push(notif);
-    if (!summaryTimer) summaryTimer = setTimeout(async () => { await sendEmail(pendingSummary); pendingSummary=[]; summaryTimer=null; }, 3600000);
-  }
-  // daily : non implémenté côté client (nécessiterait un backend)
+  if(!settings.ejsService||!settings.ejsTemplate||!settings.ejsPubkey||!settings.ejsTo)return;
+  if(settings.freq==='immediate') await sendEmail([notif]);
 }
-
 async function sendEmail(notifs) {
-  if (!settings.ejsService || !settings.ejsPubkey || !settings.ejsTemplate || !settings.ejsTo) return;
-  try {
+  try{
     emailjs.init(settings.ejsPubkey);
-    const lines = notifs.map(n => {
-      const label = n.entityType==='client' ? 'Client '+n.entityId.replace('CLIENT_','').replace(/_/g,' ') : 'Commande N° '+n.entityId;
-      return `• ${label} — ${n.operator||'Anonyme'} — ${new Date(n.createdAt).toLocaleString('fr-FR')}`;
-    }).join('\n');
-    await emailjs.send(settings.ejsService, settings.ejsTemplate, {
-      to_email: settings.ejsTo,
-      subject: `[Qualité Stema] ${notifs.length} nouvelle${notifs.length>1?'s':''} photo${notifs.length>1?'s':''}`,
-      message: lines
-    });
-    // Historique
-    const entry = { date: new Date().toLocaleString('fr-FR'), count: notifs.length };
-    notifHistory.unshift(entry);
-    if (notifHistory.length > 20) notifHistory = notifHistory.slice(0,20);
-    localStorage.setItem('stema_notif_history', JSON.stringify(notifHistory));
-    renderHistory();
-  } catch(e) { console.error('EmailJS:', e); }
+    const lines=notifs.map(n=>{const label=n.entityType==='client'?'Client '+n.entityId.replace('CLIENT_','').replace(/_/g,' '):'Commande N° '+n.entityId;return `• ${label} — ${n.operator||'Anonyme'} — ${new Date(n.createdAt).toLocaleString('fr-FR')}`;}).join('\n');
+    await emailjs.send(settings.ejsService,settings.ejsTemplate,{to_email:settings.ejsTo,subject:`[Qualité Stema] ${notifs.length} nouvelle${notifs.length>1?'s':''} photo${notifs.length>1?'s':''}`,message:lines});
+    const entry={date:new Date().toLocaleString('fr-FR'),count:notifs.length};
+    notifHistory.unshift(entry);if(notifHistory.length>20)notifHistory=notifHistory.slice(0,20);
+    localStorage.setItem('stema_notif_hist',JSON.stringify(notifHistory));renderHistory();
+  }catch(e){console.error('EmailJS:',e);}
 }
-
-window.sendTestEmail = async () => {
-  if (!settings.ejsService || !settings.ejsPubkey || !settings.ejsTemplate || !settings.ejsTo) {
-    toast('⚠️ Remplissez et sauvegardez la config EmailJS d\'abord', 'err'); return;
-  }
-  try {
+window.sendTestEmail=async()=>{
+  if(!settings.ejsService||!settings.ejsPubkey||!settings.ejsTemplate||!settings.ejsTo){toast('⚠️ Configurez et sauvegardez EmailJS d\'abord','err');return;}
+  try{
     emailjs.init(settings.ejsPubkey);
-    await emailjs.send(settings.ejsService, settings.ejsTemplate, {
-      to_email: settings.ejsTo,
-      subject: '[Qualité Stema] Email test',
-      message: '✅ La configuration fonctionne correctement !\n\nApplication Qualité Stema'
-    });
-    toast('📧 Email test envoyé à ' + settings.ejsTo, 'ok');
-  } catch(e) { console.error(e); toast('❌ Erreur : ' + e.text, 'err'); }
+    await emailjs.send(settings.ejsService,settings.ejsTemplate,{to_email:settings.ejsTo,subject:'[Qualité Stema] Email test',message:'✅ La configuration fonctionne correctement !\n\nApplication Qualité Stema'});
+    toast('📧 Email test envoyé à '+settings.ejsTo,'ok');
+  }catch(e){console.error(e);toast('❌ Erreur : '+(e.text||e.message),'err');}
 };
-
-function renderHistory() {
-  const el = document.getElementById('notif-history');
-  if (!notifHistory.length) { el.innerHTML = '<div class="hist-empty">Aucune notification envoyée</div>'; return; }
-  el.innerHTML = notifHistory.map(h => `<div class="notif-hist-item"><span>${h.date}</span><span style="color:#0f3460;font-weight:700">${h.count} photo${h.count>1?'s':''}</span></div>`).join('');
+function renderHistory(){
+  const el=document.getElementById('notif-history');
+  if(!notifHistory.length){el.innerHTML='<div class="hist-empty">Aucun email envoyé</div>';return;}
+  el.innerHTML=notifHistory.map(h=>`<div class="hist-item"><span>${h.date}</span><span style="color:#0f3460;font-weight:700">${h.count} photo${h.count>1?'s':''}</span></div>`).join('');
 }
-
-// ── GALERIE ──
-window.loadGallery = async () => {
-  const from = document.getElementById('gal-from').value;
-  const to = document.getElementById('gal-to').value;
-  const grid = document.getElementById('gallery-grid');
-  grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Chargement...</div>';
-  try {
-    let q;
-    if (from && to) q = query(collection(db,'photos'), where('createdAt','>=',new Date(from).toISOString()), where('createdAt','<=',new Date(to+'T23:59:59').toISOString()), orderBy('createdAt','desc'));
-    else q = query(collection(db,'photos'), orderBy('createdAt','desc'), limit(100));
-    const snap = await getDocs(q);
-    const photos = snap.docs.map(d=>d.data());
-    document.getElementById('gal-count').textContent = `${photos.length} photo${photos.length>1?'s':''}`;
-    if (!photos.length) { grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Aucune photo sur cette période</div>'; return; }
-    grid.innerHTML = photos.map(p => {
-      const isClient = p.type==='client';
-      const label = isClient ? '👤 '+(p.clientName||p.commandeId) : '📋 '+p.commandeId;
-      return `<div class="gallery-card">
-        <a href="${p.url}" target="_blank"><img src="${p.url}" loading="lazy" alt=""></a>
-        <div class="gallery-card-body">
-          <div class="gallery-card-cmd">${label}</div>
-          ${p.operator?`<div class="gallery-card-op">👷 ${p.operator}</div>`:''}
-          <div class="gallery-card-date">${new Date(p.createdAt).toLocaleDateString('fr-FR')}</div>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { console.error(e); grid.innerHTML = '<div class="feed-empty" style="grid-column:1/-1">Erreur chargement</div>'; }
-};
 
 // ── UTILITAIRES ──
-function timeAgo(iso) {
-  const diff = Date.now()-new Date(iso).getTime();
-  const m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);
-  if(m<1)return'à l\'instant';if(m<60)return`il y a ${m}min`;if(h<24)return`il y a ${h}h`;return`il y a ${d}j`;
-}
-function toast(msg,type){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast '+(type||'');
-  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
-}
+function timeAgo(iso){const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);if(m<1)return'à l\'instant';if(m<60)return`il y a ${m}min`;if(h<24)return`il y a ${h}h`;return`il y a ${d}j`;}
+function fmtDate(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function formatBytes(b){if(b<1024)return b+' o';if(b<1048576)return(b/1024).toFixed(1)+' Ko';if(b<1073741824)return(b/1048576).toFixed(1)+' Mo';return(b/1073741824).toFixed(2)+' Go';}
+function loader(txt){document.getElementById('loader-text').textContent=txt;document.getElementById('loader').classList.add('active');}
+function hideLoader(){document.getElementById('loader').classList.remove('active');}
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
 
 init();
 </script>
