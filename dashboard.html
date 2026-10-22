@@ -95,6 +95,7 @@
     .feed-empty{padding:40px;text-align:center;color:#bbb;font-size:14px}
 
     /* DOSSIERS */
+    .folder-block.folder-highlight{box-shadow:0 0 0 3px #0f3460;transition:box-shadow .3s}
     .folder-block{background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:16px;overflow:hidden}
     .folder-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:background .1s}
     .folder-header:hover{background:#fafafa}
@@ -237,7 +238,7 @@
 <!-- NAV TABS -->
 <div class="nav-tabs" style="background:#fff;border-bottom:1px solid #e8e8e8">
   <button class="nav-tab active" onclick="showTab('feed',this)">🔔 Notifications <span class="badge" id="unread-badge" style="display:none">0</span></button>
-  <button class="nav-tab" onclick="showTab('dossiers',this)">📁 Dossiers</button>
+  <button class="nav-tab" id="nav-dossiers" onclick="showTab('dossiers',this)">📁 Commandes</button>
   <button class="nav-tab" onclick="showTab('archive',this)">🗄️ Archiver</button>
   <button class="nav-tab" onclick="showTab('settings',this)">⚙️ Paramètres</button>
 </div>
@@ -399,7 +400,7 @@ window.showTab = (id, btn) => {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'dossiers') loadDossiers();
+  if (id === 'dossiers') return loadDossiers();
 };
 
 // ── SETTINGS ──
@@ -467,7 +468,7 @@ function renderFeed() {
     const isClient = n.entityType==='client';
     const label = isClient?'👤 '+n.entityId.replace('CLIENT_','').replace(/_/g,' '):'📋 N° '+n.entityId;
     const op = n.operator&&n.operator!=='Anonyme'?` · 👷 ${n.operator}`:'';
-    return `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n._id}',this)">
+    return `<div class="notif-item ${n.read?'':'unread'}" onclick="openFromNotif('${n._id}','${String(n.entityId||'').replace(/'/g,"\\'")}',this)">
       ${n.photoUrl?`<img class="notif-thumb" src="${n.photoUrl}" loading="lazy">`:'<div class="notif-thumb-ph">📷</div>'}
       <div class="notif-body">
         <div class="notif-top"><div class="notif-title-text">${label}</div><div class="notif-time">${timeAgo(n.createdAt)}</div></div>
@@ -481,6 +482,23 @@ window.markRead = async(id,el)=>{
   if(!el.classList.contains('unread'))return;
   el.classList.remove('unread');el.querySelector('.unread-dot')?.remove();
   try{await updateDoc(doc(db,'notifications',id),{read:true});}catch(e){}
+};
+// Clic sur une notification : marque lu puis ouvre la commande concernée
+window.openFromNotif = async(id, entityId, el) => {
+  markRead(id, el);
+  if (!entityId) return;
+  const search = document.getElementById('dossier-search');
+  search.value = '';
+  document.getElementById('dossier-clear').style.display = 'none';
+  await showTab('dossiers', document.getElementById('nav-dossiers'));
+  const fid = 'folder-' + entityId.replace(/[^a-zA-Z0-9]/g,'_');
+  const photos = document.getElementById(fid);
+  if (!photos) { toast('Commande introuvable (photos supprimées ?)','err'); return; }
+  const block = photos.closest('.folder-block');
+  if (!photos.classList.contains('open')) toggleFolder(fid, block.querySelector('.folder-header'));
+  block.scrollIntoView({behavior:'smooth', block:'start'});
+  block.classList.add('folder-highlight');
+  setTimeout(()=>block.classList.remove('folder-highlight'), 2500);
 };
 window.markAllRead = async()=>{
   const batch=writeBatch(db);
