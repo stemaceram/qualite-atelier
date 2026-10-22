@@ -570,7 +570,8 @@ window.goBack = () => {
 };
 
 // ── OUVRIR COMMANDE ──
-window.goCommande = async () => {
+window.goCommande = async (fromScan) => {
+  if (typeof fromScan === 'string' && fromScan.trim()) document.getElementById('commande-input').value = fromScan.trim();
   const commandeId = document.getElementById('commande-input').value.trim().toUpperCase();
   if (!commandeId) { toast('Saisissez un numéro de commande', 'err'); return; }
   loader('Ouverture...');
@@ -745,9 +746,65 @@ window.addPhoto = async (event, mode) => {
 function compressImage(file,maxSize,quality){return new Promise(resolve=>{const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxSize||h>maxSize){if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}else{w=Math.round(w*maxSize/h);h=maxSize;}}canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',quality));};img.src=e.target.result;};reader.readAsDataURL(file);});}
 
 // ── QR ──
-window.openQR=async()=>{try{qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});const video=document.getElementById('qr-video');video.srcObject=qrStream;await video.play();document.getElementById('qr-overlay').classList.add('active');scanFrame();}catch(e){toast('Accès caméra refusé','err');}};
-function scanFrame(){const video=document.getElementById('qr-video'),canvas=document.getElementById('qr-canvas');if(!qrStream)return;if(video.readyState===video.HAVE_ENOUGH_DATA){canvas.width=video.videoWidth;canvas.height=video.videoHeight;const ctx=canvas.getContext('2d');ctx.drawImage(video,0,0,canvas.width,canvas.height);const code=jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height);if(code){closeQR();window.go(code.data);return;}}qrTimer=requestAnimationFrame(scanFrame);}
-window.closeQR=()=>{if(qrTimer){cancelAnimationFrame(qrTimer);qrTimer=null;}if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;}document.getElementById('qr-overlay').classList.remove('active');};
+// Extrait le n° de commande du contenu du QR (texte brut, URL, ou préfixe type "CMD:")
+function parseQR(raw){
+  let v=String(raw||'').trim();
+  try{
+    const u=new URL(v);
+    const p=u.searchParams;
+    v=p.get('commande')||p.get('cmd')||p.get('id')||p.get('order')||u.pathname.split('/').filter(Boolean).pop()||v;
+  }catch(e){}
+  v=v.replace(/^(cmd|commande|order|n°|no)\s*[:#\-]?\s*/i,'').split(/[\s;|]/)[0];
+  return v.replace(/\//g,'-').trim();
+}
+let qrDetector=null, qrBusy=false;
+window.openQR=async()=>{
+  const overlay=document.getElementById('qr-overlay');
+  const video=document.getElementById('qr-video');
+  overlay.classList.add('active'); // afficher AVANT play() (sinon la vidéo reste figée sur iPhone)
+  try{
+    qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    video.setAttribute('playsinline','');video.muted=true;
+    video.srcObject=qrStream;
+    await video.play();
+    if('BarcodeDetector' in window){
+      try{const f=await BarcodeDetector.getSupportedFormats();if(f.includes('qr_code'))qrDetector=new BarcodeDetector({formats:['qr_code']});}catch(e){qrDetector=null;}
+    }
+    scanFrame();
+  }catch(e){console.error(e);closeQR();toast('Accès caméra refusé ou indisponible','err');}
+};
+async function scanFrame(){
+  if(!qrStream)return;
+  const video=document.getElementById('qr-video'),canvas=document.getElementById('qr-canvas');
+  if(!qrBusy && video.readyState>=video.HAVE_CURRENT_DATA && video.videoWidth){
+    qrBusy=true;
+    try{
+      let txt=null;
+      if(qrDetector){
+        const codes=await qrDetector.detect(video);
+        if(codes.length)txt=codes[0].rawValue;
+      }
+      if(!txt && typeof jsQR==='function'){
+        // Recadre le centre de l'image et réduit à ~600 px : beaucoup plus rapide et fiable sur mobile
+        const vw=video.videoWidth,vh=video.videoHeight,side=Math.min(vw,vh)*0.8;
+        const sx=(vw-side)/2,sy=(vh-side)/2,size=Math.min(600,Math.round(side));
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});
+        ctx.drawImage(video,sx,sy,side,side,0,0,size,size);
+        const img=ctx.getImageData(0,0,size,size);
+        const code=jsQR(img.data,size,size,{inversionAttempts:'attemptBoth'});
+        if(code&&code.data)txt=code.data;
+      }
+      if(txt){
+        const id=parseQR(txt);
+        if(id){if(navigator.vibrate)navigator.vibrate(80);closeQR();window.goCommande(id);return;}
+      }
+    }catch(e){console.error(e);}
+    qrBusy=false;
+  }
+  qrTimer=setTimeout(scanFrame,120);
+}
+window.closeQR=()=>{if(qrTimer){clearTimeout(qrTimer);qrTimer=null;}qrBusy=false;if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;}const v=document.getElementById('qr-video');v.srcObject=null;document.getElementById('qr-overlay').classList.remove('active');};
 
 // ── UTILITAIRES ──
 function formatDate(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
